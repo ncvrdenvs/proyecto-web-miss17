@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <title>MISS 17 CHIMBARONGO · Plataforma Oficial de Votación 2026</title>
+  <meta name="description" content="Plataforma oficial de votación para Miss 17 Chimbarongo 2026 - Nueva Generación. Votación fácil, transparente y en tiempo real." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+
+  <!-- Shader Interactivo 60fps: Cintas de Seda y Aurora en la Paleta Oficial Miss 17 -->
+  <canvas id="auroraCanvas" aria-hidden="true"></canvas>
+  <div class="spatial-grid-overlay" aria-hidden="true"></div>
+
+  <!-- Canvas de Celebración al Confirmar Voto -->
+  <canvas id="confettiCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:240;width:100%;height:100%;"></canvas>
+
+  <!-- NAVBAR CÁPSULA FLOTANTE (LIQUID GLASS 2026) -->
+  <div class="floating-nav-wrapper">
+    <header class="navbar-pill" id="mainNavbar">
+      <a href="#inicio" class="nav-brand">
+        <div class="nav-logo-capsule">
+          <img src="/logo.jpg" alt="Logo Oficial Miss 17 Chimbarongo" />
+        </div>
+        <div class="nav-brand-copy">
+          <span class="nav-brand-title">MISS <span>17</span></span>
+          <span class="nav-brand-sub">CHIMBARONGO · 2026</span>
+        </div>
+      </a>
+
+      <nav aria-label="Navegación principal">
+        <ul class="nav-menu">
+          <li><a href="#ranking" class="nav-menu-link active">Ranking TOP 3</a></li>
+          <li><a href="#candidatas" class="nav-menu-link">Candidatas</a></li>
+          <li><a href="#como-votar" class="nav-menu-link">¿Cómo Votar?</a></li>
+          <li><a href="#admin-panel" class="nav-menu-link">Organización</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-right">
+        <div class="shield-live-indicator" style="background:rgba(213,0,120,0.15);border-color:rgba(242,41,155,0.4);color:var(--rosa-muy-claro);">
+          <span class="live-beacon"></span>
+          <span>Votación Abierta</span>
+        </div>
+        <a href="#candidatas" class="btn-magnetic-fucsia" style="padding:10px 20px;font-size:0.75rem;">
+          <span>Votar Ahora</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+    </header>
+  </div>
+
+  <main id="inicio">
+    <!-- ======================================================================
+         HERO RUNWAY 2026 — TIPOGRAFÍA CINÉTICA & ESCULTURA EDITORIAL
+         ====================================================================== -->
+    <section class="hero-runway">
+      <div class="hero-left-col">
+        <div class="hero-tag-2026">
+          <span class="live-beacon"></span>
+          <span>CERTAMEN OFICIAL MISS 17 CHIMBARONGO</span>
+        </div>
+
+        <h1 class="hero-display-title">
+          <span class="stroke-line">MISS 17</span>
+          <span class="solid-line">CHIMBARONGO</span>
+          <span class="liquid-gradient-line">NUEVA GENERACIÓN</span>
+        </h1>
+
+        <p class="hero-lead">
+          Apoya a tu candidata favorita de forma <strong>rápida, sencilla y desde cualquier dispositivo</strong>. Cada persona cuenta con un voto único para garantizar un certamen justo, transparente y con igualdad de condiciones para todas.
+        </p>
+
+        <div class="hero-cta-row">
+          <a href="#candidatas" class="btn-magnetic-fucsia">
+            <span>Elegir a mi Favorita</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <a href="#ranking" class="btn-glass-secondary">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            <span>Ver Podio TOP 3 en Vivo</span>
+          </a>
+        </div>
+
+        <div class="hero-bento-strip">
+          <div class="hero-bento-cell spotlight-card">
+            <span class="bento-cell-kicker">
+              <span class="live-beacon"></span> Votos Recibidos
+            </span>
+            <div class="bento-cell-value" id="statTotalVerified">1.171</div>
+            <div class="bento-cell-sub">Actualizado al instante en vivo</div>
+          </div>
+
+          <div class="hero-bento-cell spotlight-card">
+            <span class="bento-cell-kicker">1 Voto por Persona</span>
+            <div class="bento-cell-value">100<span>%</span></div>
+            <div class="bento-cell-sub">Votación justa y transparente</div>
+          </div>
+
+          <div class="hero-bento-cell spotlight-card">
+            <span class="bento-cell-kicker">Comuna de Chimbarongo</span>
+            <div class="bento-cell-value">8 <span>Candidatas</span></div>
+            <div class="bento-cell-sub">Representando a cada sector</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Escultura Acrílica 3D Derecha con Logo Oficial -->
+      <div class="hero-stage-3d">
+        <div class="orbit-chip chip-top">
+          <span class="live-beacon"></span>
+          <div>
+            <span style="display:block;font-size:0.64rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--lila);font-weight:700;">LIDERANDO EL RANKING</span>
+            <strong id="heroTop1PreviewName" style="font-family:var(--font-principal);font-size:0.86rem;color:var(--blanco);text-transform:uppercase;">Valentina Rojas</strong>
+          </div>
+        </div>
+
+        <div class="acrylic-monolith" id="heroTiltMonolith">
+          <div class="acrylic-monolith-inner">
+            <div class="logo-vault-card">
+              <img src="/logo.jpg" alt="Miss 17 Chimbarongo Oficial" />
+            </div>
+
+            <div class="monolith-hud-footer">
+              <div class="hud-fp-group">
+                <span>Votación Oficial 2026</span>
+                <strong>Miss 17 Chimbarongo</strong>
+              </div>
+              <span class="badge-status verified">1 PERSONA = 1 VOTO</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="orbit-chip chip-bottom">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F2299B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <div>
+            <span style="display:block;font-size:0.64rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--lila);font-weight:700;">VOTA EN 1 MINUTO</span>
+            <strong style="font-family:var(--font-principal);font-size:0.82rem;color:var(--blanco);">Fácil · Rápido · 100% Gratis</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         DOBLE CINTA CINÉTICA EN TIEMPO REAL (KINETIC MARQUEE 2026)
+         ====================================================================== -->
+    <div class="kinetic-ribbons-stage" aria-label="Transmisión en directo">
+      <div class="kinetic-ribbon ribbon-primary">
+        <div class="ribbon-track" id="liveTickerTrackPrimary"></div>
+      </div>
+      <div class="kinetic-ribbon ribbon-secondary">
+        <div class="ribbon-track" id="liveTickerTrackSecondary"></div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         SECCIÓN RANKING DINÁMICO DE POPULARIDAD (TOP 1, TOP 2, TOP 3)
+         ====================================================================== -->
+    <section id="ranking" class="stage-ranking-section">
+      <div class="editorial-section-head">
+        <div class="eyebrow-pill">
+          <span class="live-beacon"></span>
+          <span>ACTUALIZACIÓN EN VIVO</span>
+        </div>
+        <h2 class="display-section-title">
+          ASÍ VA EL <span>RANKING DE POPULARIDAD</span>
+        </h2>
+        <p class="editorial-section-sub">
+          El podio oficial se actualiza en tiempo real a medida que llegan los votos. Los porcentajes muestran la tendencia y preferencias del público sin revelar el número exacto, manteniendo la emoción hasta el final.
+        </p>
+      </div>
+
+      <!-- Barra de Control de Transmisión en Vivo -->
+      <div class="broadcast-control-bar">
+        <div class="broadcast-status">
+          <span class="live-beacon"></span>
+          <span id="lastVoteTimestampText">Votación en vivo · Resultados actualizados al instante</span>
+        </div>
+        <div class="broadcast-actions">
+          <button type="button" id="btnSimulateLiveVotes" class="btn-broadcast-pill" title="Simular votos para ver el ranking en movimiento">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Ver Movimiento en Vivo: OFF</span>
+          </button>
+          <button type="button" id="btnSingleSimVote" class="btn-broadcast-pill">
+            <span>+1 Voto de Prueba</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Escenario de 3 Monolitos Holográficos: TOP 2, TOP 1 (Centro), TOP 3 -->
+      <div class="podium-monoliths-grid" id="podiumContainer">
+        <!-- Renderizado dinámicamente por app.js -->
+      </div>
+
+      <!-- Cinta de candidatas persiguiendo el podio (#4 a #8) -->
+      <div class="chasers-glass-bar">
+        <div class="chasers-label">
+          <span class="live-beacon"></span>
+          <span>SIGUIENDO MUY DE CERCA EL PODIO DE POPULARIDAD:</span>
+        </div>
+        <div class="chasers-list" id="runnersUpContainer">
+          <!-- Renderizado dinámicamente por app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         SECCIÓN CANDIDATAS — REVISTA EDITORIAL (IGUALDAD DE CONDICIONES)
+         ====================================================================== -->
+    <section id="candidatas" class="runway-light-section">
+      <div class="runway-light-inner">
+        <div class="editorial-section-head">
+          <div class="eyebrow-pill" style="background:rgba(213,0,120,0.1);border-color:var(--fucsia-miss-17);color:var(--fucsia-miss-17);">
+            <span>PARTICIPANTES OFICIALES · EDICIÓN 2026</span>
+          </div>
+          <h2 class="display-section-title">
+            CANDIDATAS <span>MISS 17 CHIMBARONGO</span>
+          </h2>
+          <p class="editorial-section-sub">
+            Todas las participantes cuentan con las mismas oportunidades. Conoce sus historias, sus sueños para la comuna y apoya a tu favorita.
+          </p>
+        </div>
+
+        <!-- Barra de Equidad y Buscador Sencillo -->
+        <div class="editorial-filter-bar">
+          <div class="equity-statement">
+            <div class="equity-icon-orb">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+            </div>
+            <div>
+              <h3>Igualdad de Condiciones Garantizada</h3>
+              <p>El orden de las participantes cambia de forma aleatoria para que todas tengan exactamente las mismas oportunidades de destacar.</p>
+            </div>
+          </div>
+
+          <div class="filter-controls-group">
+            <div class="editorial-search-box">
+              <svg class="editorial-search-svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="search" id="searchCandidateInput" class="editorial-search-input" placeholder="Buscar por nombre o sector..." aria-label="Buscar candidata" />
+            </div>
+            <button type="button" id="btnShuffleCandidates" class="btn-shuffle-light">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/></svg>
+              <span>Mezclar Orden</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Grilla de Portadas Editoriales -->
+        <div class="editorial-covers-grid" id="candidatesGrid">
+          <!-- Renderizado dinámicamente por app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         SECCIÓN: ¿CÓMO VOTAR EN 3 PASOS FÁCILES? (ACCESIBLE Y CLARA)
+         ====================================================================== -->
+    <section id="como-votar" class="how-to-vote-section">
+      <div class="how-to-vote-container">
+        <div class="editorial-section-head">
+          <div class="eyebrow-pill">
+            <span>RÁPIDO, SIMPLE Y TRANSPARENTE</span>
+          </div>
+          <h2 class="display-section-title">
+            ¿CÓMO VOTAR EN <span>3 PASOS SENCILLOS</span>?
+          </h2>
+          <p class="editorial-section-sub">
+            Votar por tu candidata toma menos de un minuto. No necesitas crear contraseñas complicadas ni descargar aplicaciones.
+          </p>
+        </div>
+
+        <div class="how-to-vote-grid">
+          <article class="step-guide-card spotlight-card">
+            <span class="step-number-tag">PASO 01</span>
+            <div class="step-icon-bubble">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </div>
+            <h3>Elige a tu Candidata</h3>
+            <p>
+              Recorre la lista de participantes oficiales de Chimbarongo, conoce sus pasatiempos y proyectos para la comuna, y haz clic en <strong>"Votar por Ella"</strong>.
+            </p>
+          </article>
+
+          <article class="step-guide-card spotlight-card">
+            <span class="step-number-tag">PASO 02</span>
+            <div class="step-icon-bubble">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            </div>
+            <h3>Ingresa tu RUT y Correo</h3>
+            <p>
+              Escribe tu RUT chileno y tu correo personal. Esto garantiza que <strong>cada persona vote una sola vez</strong> y que el certamen sea 100% justo para todas.
+            </p>
+          </article>
+
+          <article class="step-guide-card spotlight-card">
+            <span class="step-number-tag">PASO 03</span>
+            <div class="step-icon-bubble">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <h3>Confirma tu Código y ¡Listo!</h3>
+            <p>
+              Ingresa el código simple de 6 números que verás en pantalla o recibirás en tu correo. ¡Tu voto se sumará al instante al ranking de popularidad en vivo!
+            </p>
+          </article>
+        </div>
+
+        <div class="vote-trust-banner">
+          <div class="vote-trust-info">
+            <div class="vote-trust-icon">💗</div>
+            <div>
+              <h4>Votación Transparente y Confiable</h4>
+              <p>El sistema garantiza que cada voto sea legítimo y que todas las participantes de Chimbarongo tengan igualdad de condiciones.</p>
+            </div>
+          </div>
+          <a href="#candidatas" class="btn-magnetic-fucsia">
+            <span>Ir a Votar Ahora</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         PANEL DE ORGANIZACIÓN Y PRUEBAS INTERNAS
+         ====================================================================== -->
+    <section id="admin-panel" class="command-center-section">
+      <div class="command-shell">
+        <div class="command-header">
+          <div>
+            <span style="font-family:var(--font-principal);font-size:0.68rem;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--rosa-pop);display:block;margin-bottom:4px;">
+              HERRAMIENTAS PARA LA ORGANIZACIÓN
+            </span>
+            <h2>Panel de Gestión y Pruebas</h2>
+          </div>
+
+          <div class="command-tabs" role="tablist">
+            <button type="button" class="cmd-tab-btn active" data-tab="tab-lab">Pruebas Rápidas</button>
+            <button type="button" class="cmd-tab-btn" data-tab="tab-candidatas">Gestionar Candidatas (<span id="adminCandCount">8</span>)</button>
+            <button type="button" class="cmd-tab-btn" data-tab="tab-auditoria">Conteo Exacto & Registro</button>
+          </div>
+        </div>
+
+        <!-- TAB 1: Pruebas Rápidas -->
+        <div class="cmd-panel active" id="tab-lab">
+          <div class="lab-cards-grid">
+            <div class="lab-card">
+              <div>
+                <h4>Votar Nuevamente desde este Equipo</h4>
+                <p id="labDeviceStatusText">Puedes reiniciar tu prueba para votar de nuevo con otro RUT.</p>
+              </div>
+              <button type="button" id="btnResetMyDeviceVote" class="btn-glass-secondary" style="width:100%;">
+                🔄 Habilitar para Votar de Nuevo
+              </button>
+            </div>
+
+            <div class="lab-card">
+              <div>
+                <h4>Probar Intento Duplicado</h4>
+                <p>Comprueba qué mensaje recibe alguien que intenta votar una segunda vez con el mismo RUT.</p>
+              </div>
+              <button type="button" id="btnTestDuplicateRut" class="btn-glass-secondary" style="width:100%;">
+                Probar RUT Repetido
+              </button>
+            </div>
+
+            <div class="lab-card">
+              <div>
+                <h4>Simular Votos en Vivo (+5 Votos)</h4>
+                <p>Agrega 5 votos al azar para ver cómo cambian los porcentajes y el podio en tiempo real.</p>
+              </div>
+              <button type="button" id="btnBurstFiveVotes" class="btn-magnetic-fucsia" style="width:100%;">
+                ✨ Simular 5 Votos en Vivo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: Gestión de Candidatas -->
+        <div class="cmd-panel" id="tab-candidatas">
+          <form id="addCandidateForm" class="admin-add-grid">
+            <div>
+              <label class="field-label" for="newCandName">Nombre Completo *</label>
+              <input type="text" id="newCandName" class="modern-input" placeholder="Ej: Sofía González Pérez" required />
+            </div>
+            <div>
+              <label class="field-label" for="newCandAge">Edad *</label>
+              <input type="number" id="newCandAge" class="modern-input" min="14" max="22" value="17" required />
+            </div>
+            <div>
+              <label class="field-label" for="newCandSector">Sector de Chimbarongo *</label>
+              <input type="text" id="newCandSector" class="modern-input" placeholder="Ej: Convento Viejo" required />
+            </div>
+            <div>
+              <label class="field-label" for="newCandSchool">Colegio o Institución</label>
+              <input type="text" id="newCandSchool" class="modern-input" placeholder="Ej: Liceo Bicentenario" />
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label class="field-label" for="newCandQuote">Frase o Mensaje de la Candidata *</label>
+              <input type="text" id="newCandQuote" class="modern-input" placeholder="Ej: Orgullosa de representar a la juventud de mi comuna..." required />
+            </div>
+            <div>
+              <label class="field-label" for="newCandPhotoFile">Fotografía (Opcional)</label>
+              <input type="file" id="newCandPhotoFile" accept="image/*" class="modern-input" style="padding:9px;" />
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button type="submit" class="btn-magnetic-fucsia" style="width:100%;">➕ Agregar Candidata</button>
+            </div>
+          </form>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
+            <span style="font-family:var(--font-principal);font-weight:800;font-size:0.84rem;text-transform:uppercase;color:var(--rosa-muy-claro);">
+              Conteo Exacto de Votos (Visible únicamente para los administradores)
+            </span>
+            <button type="button" id="btnRestoreDefaultCandidates" class="btn-glass-secondary" style="padding:8px 16px;font-size:0.7rem;">
+              Restaurar Candidatas de Prueba
+            </button>
+          </div>
+
+          <div class="dark-table-wrap">
+            <table class="dark-table">
+              <thead>
+                <tr>
+                  <th>Nº / Posición</th>
+                  <th>Candidata</th>
+                  <th>Sector</th>
+                  <th>Votos Exactos</th>
+                  <th>% Preferencia</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="adminCandidatesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: Bitácora y Conteo Exacto -->
+        <div class="cmd-panel" id="tab-auditoria">
+          <div class="dark-table-wrap">
+            <table class="dark-table">
+              <thead>
+                <tr>
+                  <th>N° Comprobante</th>
+                  <th>Hora</th>
+                  <th>RUT</th>
+                  <th>Candidata Apoyada</th>
+                  <th>Estado</th>
+                  <th>Detalle</th>
+                </tr>
+              </thead>
+              <tbody id="auditLogTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER OFICIAL -->
+  <footer class="footer-2026">
+    <div class="footer-inner">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="nav-logo-capsule">
+          <img src="/logo.jpg" alt="Miss 17 Chimbarongo" />
+        </div>
+        <div>
+          <strong style="font-family:var(--font-principal);font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:var(--blanco);display:block;">
+            MISS 17 CHIMBARONGO · NUEVA GENERACIÓN
+          </strong>
+          <span style="font-size:0.78rem;color:var(--lila);">
+            Plataforma Oficial de Votación · 1 Persona = 1 Voto
+          </span>
+        </div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--lila);text-align:right;">
+        <span>Certamen Oficial de Chimbarongo · Votación en Tiempo Real</span><br />
+        <span>Diseñado para despliegue en Vercel · © 2026 Miss 17 Chimbarongo</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       MODAL DE VOTACIÓN EN 3 PASOS (FÁCIL Y RÁPIDO)
+       ======================================================================== -->
+  <div class="modal-backdrop" id="voteModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalCandName">
+    <div class="vote-modal-2026">
+      <div class="modal-top-banner">
+        <div class="modal-cand-chip">
+          <img src="" alt="" id="modalCandAvatar" class="modal-cand-avatar" />
+          <div class="modal-cand-info">
+            <span>ESTÁS VOTANDO POR:</span>
+            <h3 id="modalCandName">Candidata</h3>
+          </div>
+        </div>
+        <button type="button" class="btn-modal-close" id="btnCloseVoteModal" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modal-steps-bar">
+        <div class="step-pill active" id="stepIndicator1">
+          <span class="step-num">1</span>
+          <span>Tus Datos</span>
+        </div>
+        <div class="step-pill" id="stepIndicator2">
+          <span class="step-num">2</span>
+          <span>Código</span>
+        </div>
+        <div class="step-pill" id="stepIndicator3">
+          <span class="step-num">3</span>
+          <span>¡Listo!</span>
+        </div>
+      </div>
+
+      <div class="modal-body-content">
+        <div id="modalAlertBox" class="alert-box" role="alert"></div>
+
+        <!-- PASO 1: Formulario Sencillo -->
+        <form id="voteStep1Form">
+          <div class="hp-trap-field" aria-hidden="true">
+            <label for="hpWebsiteField">No llenar</label>
+            <input type="text" id="hpWebsiteField" name="website_url" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <div class="field-group">
+            <div class="field-label-row">
+              <label class="field-label" for="voterRutInput">Tu RUT (1 voto por persona) *</label>
+              <button type="button" id="btnFillDemoRut" class="btn-link-neon">
+                Probar con RUT de ejemplo
+              </button>
+            </div>
+            <input type="text" id="voterRutInput" class="modern-input" placeholder="Ej: 19.876.543-2" maxlength="12" autocomplete="off" required />
+            <span id="rutFeedbackHint" class="field-hint">Ingresa tu RUT chileno (se formatea automáticamente).</span>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label-row">
+              <label class="field-label" for="voterEmailInput">Tu Correo Electrónico *</label>
+            </div>
+            <input type="email" id="voterEmailInput" class="modern-input" placeholder="ejemplo@gmail.com" required />
+            <span id="emailFeedbackHint" class="field-hint">Te enviaremos un código de 6 números para confirmar tu voto.</span>
+          </div>
+
+          <button type="submit" id="btnSubmitStep1" class="btn-magnetic-fucsia" style="width:100%;margin-top:10px;">
+            <span>Continuar: Recibir Código de Votación</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </form>
+
+        <!-- PASO 2: Confirmación del Código de 6 Números -->
+        <form id="voteStep2Form" style="display:none;">
+          <p style="font-size:0.9rem;color:var(--rosa-muy-claro);margin-bottom:14px;line-height:1.5;">
+            Ingresa el código de 6 números para confirmar tu voto enviado a <strong id="otpTargetEmailDisplay" style="color:var(--rosa-pop);"></strong>:
+          </p>
+
+          <div class="demo-otp-banner" id="demoOtpBanner">
+            <div>
+              <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--rosa-pop);font-weight:800;display:block;">
+                TU CÓDIGO DE CONFIRMACIÓN
+              </span>
+              <div class="demo-otp-code" id="demoOtpCodeValue">------</div>
+            </div>
+            <button type="button" id="btnAutoFillOtp" class="btn-glass-secondary" style="padding:8px 14px;font-size:0.74rem;">
+              Autocompletar Código
+            </button>
+          </div>
+
+          <div class="field-group">
+            <input type="text" id="otpCodeInput" class="otp-digit-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required />
+            <span class="field-hint" style="text-align:center;">Tiempo restante: <strong id="otpCountdownText" style="color:var(--rosa-pop);">03:00</strong></span>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-top:20px;">
+            <button type="button" id="btnBackToStep1" class="btn-glass-secondary" style="flex:0.4;">
+              ← Volver
+            </button>
+            <button type="submit" id="btnSubmitStep2" class="btn-magnetic-fucsia" style="flex:1;">
+              Confirmar mi Voto Ahora
+            </button>
+          </div>
+        </form>
+
+        <!-- PASO 3: Confirmación Exitosa -->
+        <div id="voteStep3View" style="display:none;">
+          <div class="receipt-glass-card">
+            <div style="width:58px;height:58px;border-radius:50%;background:rgba(16,185,129,0.2);border:2px solid #10B981;color:#6EE7B7;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 12px;">
+              ✓
+            </div>
+            <span style="font-family:var(--font-principal);font-size:0.7rem;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--rosa-pop);">
+              ¡VOTO CONFIRMADO CON ÉXITO!
+            </span>
+            <h4 id="receiptCandidateName" style="font-family:var(--font-principal);font-weight:900;font-size:1.4rem;text-transform:uppercase;color:var(--blanco);margin:6px 0 12px;">
+              Candidata
+            </h4>
+            <p style="font-size:0.86rem;color:var(--lila);margin-bottom:14px;">
+              Muchas gracias por tu participación. Tu voto ya se ha sumado al ranking de popularidad en tiempo real.
+            </p>
+
+            <div style="text-align:left;background:rgba(0,0,0,0.35);border:1px solid rgba(200,155,221,0.2);border-radius:14px;padding:14px;font-size:0.8rem;display:grid;gap:8px;">
+              <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--lila);">Código de Comprobante:</span>
+                <strong id="receiptHashCode" style="color:var(--rosa-pop);">M17-XXXX</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--lila);">RUT Registrado:</span>
+                <strong id="receiptMaskedRut">**.***.***-*</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--lila);">Estado:</span>
+                <strong style="color:#6EE7B7;">Voto Único Válido</strong>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" id="btnFinishVoteModal" class="btn-magnetic-fucsia" style="width:100%;">
+            Ver cómo va el Ranking en Vivo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

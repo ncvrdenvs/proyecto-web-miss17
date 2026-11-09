@@ -2,6 +2,15 @@
 // MISS 17 CHIMBARONGO 2026 — DATOS EDITORIALES, FOTOGRAFÍA Y RANKING EN VIVO
 // ============================================================================
 
+export const STORAGE_KEYS = {
+  CANDIDATES: 'm17_chimbarongo_candidates_2026_v3',
+  VOTED_RUTS: 'm17_chimbarongo_voted_ruts_2026_v3',
+  VOTED_EMAILS: 'm17_chimbarongo_voted_emails_2026_v3',
+  VOTED_DEVICES: 'm17_chimbarongo_voted_devices_2026_v3',
+  AUDIT_LOGS: 'm17_chimbarongo_audit_logs_2026_v3',
+  BLOCKED_COUNT: 'm17_chimbarongo_blocked_count_2026_v3'
+};
+
 // Fallback de alta costura en caso de desconexión total de internet
 export function createEditorialPortrait(name, number, primaryColor = '#D50078', secondaryColor = '#32114F') {
   const initials = name

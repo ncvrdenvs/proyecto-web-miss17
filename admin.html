@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Administración · Miss 17 Chimbarongo 2026</title>
+  <meta name="description" content="Panel exclusivo de administración y gestión editorial del certamen Miss 17 Chimbarongo Nueva Generación 2026." />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Tipografías Oficiales: Montserrat & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Hoja de Estilos del Certamen -->
+  <link rel="stylesheet" href="/css/styles.css" />
+
+  <!-- Estilos dedicados para la Suite de Administración -->
+  <style>
+    body {
+      background-color: var(--noche-profunda);
+      color: var(--blanco);
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: var(--font-secundaria);
+    }
+
+    .admin-suite-container {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Barra Superior de la Administración */
+    .admin-suite-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(17, 4, 28, 0.88);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(242, 41, 155, 0.28);
+      padding: 12px 24px;
+      margin-bottom: 24px;
+    }
+
+    .admin-suite-nav-inner {
+      max-width: 1380px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .admin-brand-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .admin-suite-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1.5px solid var(--rosa-pop);
+      box-shadow: 0 0 16px rgba(242, 41, 155, 0.4);
+    }
+
+    .admin-title-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(213, 0, 120, 0.22);
+      border: 1px solid rgba(242, 41, 155, 0.4);
+      color: var(--rosa-pop);
+      font-family: var(--font-principal);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .admin-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* KPI Summary Cards */
+    .admin-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .admin-kpi-card {
+      background: rgba(50, 17, 79, 0.4);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(200, 155, 221, 0.2);
+      border-radius: 20px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .admin-kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--rosa-pop);
+    }
+
+    .admin-kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      background: rgba(213, 0, 120, 0.18);
+      border: 1px solid rgba(242, 41, 155, 0.35);
+    }
+
+    .admin-kpi-label {
+      font-family: var(--font-principal);
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--lila);
+      margin-bottom: 4px;
+    }
+
+    .admin-kpi-value {
+      font-family: var(--font-principal);
+      font-weight: 900;
+      font-size: 1.45rem;
+      color: var(--blanco);
+      line-height: 1.1;
+    }
+
+    /* Pestañas de Navegación */
+    .admin-tabs-nav {
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid rgba(200, 155, 221, 0.16);
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .admin-tab-btn {
+      background: transparent;
+      border: 1px solid rgba(200, 155, 221, 0.2);
+      color: var(--lila);
+      font-family: var(--font-principal);
+      font-weight: 800;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 10px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      transition: all 0.25s ease;
+    }
+
+    .admin-tab-btn:hover {
+      background: rgba(91, 43, 136, 0.3);
+      color: var(--blanco);
+      border-color: var(--rosa-pop);
+    }
+
+    .admin-tab-btn.active {
+      background: linear-gradient(135deg, var(--fucsia-miss-17), var(--violeta-17));
+      color: var(--blanco);
+      border-color: var(--rosa-pop);
+      box-shadow: 0 4px 18px rgba(213, 0, 120, 0.4);
+    }
+
+    .admin-pane {
+      display: none;
+      animation: fadeInPane 0.28s ease;
+    }
+
+    .admin-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeInPane {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Barra de Herramientas de Estudio */
+    .admin-toolbar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      background: rgba(50, 17, 79, 0.35);
+      border: 1px solid rgba(200, 155, 221, 0.2);
+      border-radius: 18px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+    }
+
+    .admin-toolbar-left, .admin-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .view-mode-pill {
+      display: inline-flex;
+      background: rgba(11, 2, 19, 0.65);
+      border: 1px solid rgba(200, 155, 221, 0.22);
+      border-radius: 10px;
+      padding: 3px;
+    }
+
+    .view-mode-pill button {
+      background: transparent;
+      border: none;
+      color: var(--lila);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .view-mode-pill button.active {
+      background: var(--fucsia-miss-17);
+      color: var(--blanco);
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+      .admin-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .admin-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .admin-suite-nav-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .admin-nav-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Fondo con Shader Fluido Aurora Miss 17 -->
+  <canvas id="auroraCanvas" class="aurora-canvas" aria-hidden="true"></canvas>
+
+  <!-- ========================================================================
+       1. PANTALLA DE ACCESO RESTRINGIDO (LOCK SCREEN POR PIN)
+       ======================================================================== -->
+  <main id="adminLockScreen" class="admin-lock-screen" style="min-height: 85vh;">
+    <div class="admin-lock-card">
+      <div class="admin-lock-icon-orb">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+
+      <img src="/logo.jpg" alt="Miss 17 Chimbarongo" style="width:52px;height:52px;border-radius:12px;margin-bottom:12px;border:1.5px solid var(--rosa-pop);" />
+
+      <h2 style="font-family:var(--font-principal);font-weight:900;font-size:1.4rem;text-transform:uppercase;color:var(--blanco);margin-bottom:6px;text-align:center;">
+        Acceso Exclusivo de Organización
+      </h2>
+      <p style="color:var(--lila);font-size:0.84rem;text-align:center;max-width:360px;margin-bottom:24px;line-height:1.5;">
+        Panel de gestión y edición de participantes del certamen <strong>Miss 17 Chimbarongo</strong>. Ingresa el PIN de seguridad asignado.
+      </p>
+
+      <form id="adminPinForm" style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;">
+        <div style="position:relative;">
+          <input
+            type="password"
+            id="adminPinInput"
+            class="admin-pin-input"
+            maxlength="8"
+            placeholder="••••"
+            inputmode="numeric"
+            autocomplete="current-password"
+            autofocus
+            required
+          />
+        </div>
+
+        <p id="adminPinError" class="admin-pin-error" style="display:none;margin-top:2px;">
+          ❌ PIN incorrecto. Acceso denegado.
+        </p>
+
+        <button type="submit" class="btn-magnetic-fucsia" style="width:100%;max-width:280px;justify-content:center;padding:14px 20px;font-size:0.85rem;margin-top:8px;">
+          <span>Desbloquear Panel de Control</span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+
+        <div style="font-size:0.68rem;color:rgba(200,155,221,0.65);margin-top:10px;text-align:center;">
+          🔒 Acceso encriptado localmente · PIN por defecto: <strong>2026</strong>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       2. PANEL COMPLETO DE ADMINISTRACIÓN (AUTENTICADO)
+       ======================================================================== -->
+  <div id="adminAuthenticatedView" style="display:none;">
+    
+    <!-- Barra Superior de Navegación del Panel -->
+    <header class="admin-suite-nav">
+      <div class="admin-suite-nav-inner">
+        <div class="admin-brand-left">
+          <img src="/logo.jpg" alt="Logo Miss 17" class="admin-suite-logo" />
+          <div>
+            <div style="font-family:var(--font-principal);font-weight:900;font-size:1.05rem;text-transform:uppercase;color:var(--blanco);line-height:1.2;">
+              MISS 17 CHIMBARONGO
+            </div>
+            <div class="admin-title-badge">
+              <span style="color:#6EE7B7;">●</span> PANEL DE CONTROL & GESTIÓN EDITORIAL
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-nav-actions">
+          <a href="/" target="_blank" class="btn-glass-secondary" style="font-size:0.75rem;padding:9px 15px;text-decoration:none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            <span>🌐 Ver Votación Pública</span>
+          </a>
+
+          <button type="button" id="btnLogoutAdmin" class="btn-glass-secondary" style="font-size:0.75rem;padding:9px 15px;border-color:rgba(244,63,94,0.45);color:#FDA4AF;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>🔒 Bloquear</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="admin-suite-container">
+      
+      <!-- Fila de Tarjetas Resumen (KPIs) -->
+      <section class="admin-kpi-grid">
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon" style="color:var(--rosa-pop);">👑</div>
+          <div>
+            <div class="admin-kpi-label">Candidata Líder</div>
+            <div class="admin-kpi-value" id="adminKpiLeaderName" style="font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">-</div>
+            <div style="font-size:0.72rem;color:var(--lila);" id="adminKpiLeaderVotes">0 votos acumulados</div>
+          </div>
+        </div>
+
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon" style="color:#6EE7B7;">👥</div>
+          <div>
+            <div class="admin-kpi-label">Total Participantes</div>
+            <div class="admin-kpi-value" id="adminKpiCount">0</div>
+            <div style="font-size:0.72rem;color:var(--lila);">En competencia oficial</div>
+          </div>
+        </div>
+
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon" style="color:#38BDF8;">🗳️</div>
+          <div>
+            <div class="admin-kpi-label">Votos Verificados</div>
+            <div class="admin-kpi-value" id="adminKpiTotalVotes">0</div>
+            <div style="font-size:0.72rem;color:var(--lila);">RUT + OTP + Huella validados</div>
+          </div>
+        </div>
+
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon" style="color:#FDA4AF;">🛡️</div>
+          <div>
+            <div class="admin-kpi-label">Intentos Bloqueados</div>
+            <div class="admin-kpi-value" id="adminKpiBlockedBots">0</div>
+            <div style="font-size:0.72rem;color:var(--lila);">Duplicados & bots repelidos</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pestañas de Navegación -->
+      <nav class="admin-tabs-nav" role="tablist">
+        <button type="button" class="admin-tab-btn active" data-tab="candidates" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <span>Estudio de Participantes y Fotos</span>
+        </button>
+
+        <button type="button" class="admin-tab-btn" data-tab="results" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg>
+          <span>Tabla Numérica de Votos</span>
+        </button>
+
+        <button type="button" class="admin-tab-btn" data-tab="audit" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Bitácora de Auditoría en Vivo</span>
+        </button>
+
+        <button type="button" class="admin-tab-btn" data-tab="tools" role="tab">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Herramientas y Configuración</span>
+        </button>
+      </nav>
+
+      <!-- ====================================================================
+           PESTAÑA 1: ESTUDIO DE PARTICIPANTES Y FOTOGRAFÍAS
+           ==================================================================== -->
+      <section id="paneCandidates" class="admin-pane active">
+        <!-- Barra de herramientas superior -->
+        <div class="admin-toolbar-row">
+          <div class="admin-toolbar-left">
+            <button type="button" id="btnOpenAddCandidateModal" class="btn-magnetic-fucsia" style="padding:10px 18px;font-size:0.8rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>➕ Registrar Nueva Participante</span>
+            </button>
+
+            <button type="button" id="btnResetDefaultCandidates" class="btn-glass-secondary" style="padding:9px 14px;font-size:0.75rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              <span>Restablecer Oficiales</span>
+            </button>
+          </div>
+
+          <div class="admin-toolbar-right">
+            <div style="position:relative;width:240px;">
+              <input
+                type="search"
+                id="adminSearchCandInput"
+                class="modern-input"
+                placeholder="Buscar por nombre o sector..."
+                style="padding:8px 12px 8px 32px;font-size:0.78rem;"
+              />
+              <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--lila);" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+
+            <div class="view-mode-pill">
+              <button type="button" id="btnViewCards" class="active">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                <span>Tarjetas</span>
+              </button>
+              <button type="button" id="btnViewTable">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span>Tabla</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vista de Cuadrícula con Tarjetas y Fotos -->
+        <div id="adminCandidatesCardsContainer">
+          <div id="adminCandidatesVisualGrid" class="admin-candidates-visual-grid">
+            <!-- Renderizado dinámicamente vía js/admin.js -->
+          </div>
+        </div>
+
+        <!-- Vista de Tabla (Opcional) -->
+        <div id="adminCandidatesTableContainer" style="display:none;" class="dark-table-wrap">
+          <table class="dark-table">
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Foto</th>
+                <th>Nombre Completo</th>
+                <th>Edad</th>
+                <th>Sector</th>
+                <th>Colegio</th>
+                <th>Votos Reales</th>
+                <th>% Preferencia</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="adminCandidatesTableBody">
+              <!-- Renderizado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PESTAÑA 2: TABLA NUMÉRICA DE RESULTADOS Y VOTOS
+           ==================================================================== -->
+      <section id="paneResults" class="admin-pane">
+        <div class="admin-toolbar-row">
+          <div>
+            <h3 style="font-family:var(--font-principal);font-weight:900;font-size:1.1rem;text-transform:uppercase;color:var(--blanco);margin-bottom:4px;">
+              Resultados Oficiales en Tiempo Real
+            </h3>
+            <p style="font-size:0.75rem;color:var(--lila);">
+              Totales de votación contabilizados y validados por el sistema biométrico Módulo 11.
+            </p>
+          </div>
+
+          <button type="button" id="btnExportCandidatesCsv" class="btn-glass-secondary" style="padding:9px 15px;font-size:0.75rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Descargar Reporte CSV</span>
+          </button>
+        </div>
+
+        <div class="dark-table-wrap">
+          <table class="dark-table">
+            <thead>
+              <tr>
+                <th>Ranking</th>
+                <th>Participante</th>
+                <th>Sector</th>
+                <th>Votos Totales</th>
+                <th>Participación (%)</th>
+                <th>Diferencia con Líder</th>
+                <th>Tendencia</th>
+              </tr>
+            </thead>
+            <tbody id="adminResultsTableBody">
+              <!-- Renderizado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PESTAÑA 3: BITÁCORA DE AUDITORÍA EN VIVO
+           ==================================================================== -->
+      <section id="paneAudit" class="admin-pane">
+        <div class="admin-toolbar-row">
+          <div>
+            <h3 style="font-family:var(--font-principal);font-weight:900;font-size:1.1rem;text-transform:uppercase;color:var(--blanco);margin-bottom:4px;">
+              Bitácora de Auditoría y Verificación
+            </h3>
+            <p style="font-size:0.75rem;color:var(--lila);">
+              Registro en tiempo real de cada voto verificado y de los intentos duplicados bloqueados por BotShield.
+            </p>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button type="button" id="btnClearAuditLogs" class="btn-glass-secondary" style="padding:9px 14px;font-size:0.75rem;border-color:rgba(244,63,94,0.4);color:#FDA4AF;">
+              Limpiar Historial
+            </button>
+            <button type="button" id="btnExportAuditCsv" class="btn-glass-secondary" style="padding:9px 14px;font-size:0.75rem;">
+              Exportar Auditoría CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="dark-table-wrap">
+          <table class="dark-table">
+            <thead>
+              <tr>
+                <th>Comprobante</th>
+                <th>Fecha / Hora</th>
+                <th>RUT (Enmascarado)</th>
+                <th>Huella de Dispositivo</th>
+                <th>Candidata Votada</th>
+                <th>Estado</th>
+                <th>Detalle Técnico</th>
+              </tr>
+            </thead>
+            <tbody id="adminAuditTableBody">
+              <!-- Renderizado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PESTAÑA 4: HERRAMIENTAS Y SIMULACIÓN
+           ==================================================================== -->
+      <section id="paneTools" class="admin-pane">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:20px;">
+          
+          <!-- Tarjeta 1: Integridad y Transparencia Electoral -->
+          <div style="background:rgba(50,17,79,0.4);border:1px solid rgba(200,155,221,0.22);border-radius:22px;padding:24px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <span style="font-size:1.6rem;">🔒</span>
+              <div>
+                <h4 style="font-family:var(--font-principal);font-weight:900;font-size:1rem;text-transform:uppercase;color:var(--blanco);">
+                  Integridad Electoral Blindada
+                </h4>
+                <p style="font-size:0.75rem;color:var(--lila);">
+                  Los votos son 100% inmutables y no pueden ser alterados manualmente.
+                </p>
+              </div>
+            </div>
+
+            <div style="background:rgba(11,2,19,0.65);border-radius:14px;padding:14px;border:1px solid rgba(200,155,221,0.16);font-size:0.75rem;color:var(--blanco);line-height:1.5;">
+              <p style="margin-bottom:8px;">
+                ✅ <strong>Protección contra manipulación:</strong> El panel administrativo no permite editar, sumar ni restar votos de ninguna participante.
+              </p>
+              <p style="color:var(--lila);margin:0;">
+                Cada voto se registra de forma limpia únicamente cuando un vecino real completa la verificación por RUT y OTP en la página pública.
+              </p>
+            </div>
+          </div>
+
+          <!-- Tarjeta 2: Pruebas con este Navegador -->
+          <div style="background:rgba(50,17,79,0.4);border:1px solid rgba(200,155,221,0.22);border-radius:22px;padding:24px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <span style="font-size:1.6rem;">📱</span>
+              <div>
+                <h4 style="font-family:var(--font-principal);font-weight:900;font-size:1rem;text-transform:uppercase;color:var(--blanco);">
+                  Habilitar Voto en este Equipo
+                </h4>
+                <p style="font-size:0.75rem;color:var(--lila);">
+                  Limpia la huella digital para poder emitir otro voto de prueba en la página pública sin cambiar de dispositivo.
+                </p>
+              </div>
+            </div>
+
+            <button type="button" id="btnResetMyDeviceVote" class="btn-glass-secondary" style="width:100%;justify-content:center;padding:12px 18px;margin-top:16px;">
+              <span>🔄 Habilitar mi Dispositivo para Votar</span>
+            </button>
+
+            <div style="font-size:0.72rem;color:var(--lila);margin-top:12px;line-height:1.4;">
+              Al presionar este botón, podrás ingresar a la página principal y emitir un nuevo voto de prueba con cualquier RUT.
+            </div>
+          </div>
+
+          <!-- Tarjeta 3: Seguridad del Panel (Cambio de PIN) -->
+          <div style="background:rgba(50,17,79,0.4);border:1px solid rgba(200,155,221,0.22);border-radius:22px;padding:24px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <span style="font-size:1.6rem;">🔑</span>
+              <div>
+                <h4 style="font-family:var(--font-principal);font-weight:900;font-size:1rem;text-transform:uppercase;color:var(--blanco);">
+                  PIN de Acceso al Panel
+                </h4>
+                <p style="font-size:0.75rem;color:var(--lila);">
+                  Actualiza la clave secreta de administración de este navegador.
+                </p>
+              </div>
+            </div>
+
+            <form id="changePinForm" style="display:flex;gap:10px;margin-top:16px;">
+              <input
+                type="text"
+                id="newPinInput"
+                class="modern-input"
+                placeholder="Nuevo PIN (ej: 2026)"
+                maxlength="8"
+                style="padding:10px 14px;font-size:0.85rem;"
+                required
+              />
+              <button type="submit" class="btn-magnetic-fucsia" style="padding:10px 16px;white-space:nowrap;font-size:0.78rem;">
+                Guardar PIN
+              </button>
+            </form>
+
+            <div style="font-size:0.72rem;color:var(--lila);margin-top:10px;">
+              PIN actual: <strong id="currentPinDisplay" style="color:var(--rosa-pop);">2026</strong>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL DE EDICIÓN Y GESTIÓN DE PARTICIPANTES
+       ======================================================================== -->
+  <div class="modal-backdrop" id="candidateEditorModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="editorModalTitle">
+    <div class="candidate-editor-modal">
+      <div class="modal-top-banner">
+        <div>
+          <span style="font-family:var(--font-principal);font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;color:var(--rosa-pop);display:block;">
+            EDITOR DE PARTICIPANTES · MISS 17 CHIMBARONGO
+          </span>
+          <h3 id="editorModalTitle" style="font-family:var(--font-principal);font-weight:900;font-size:1.18rem;text-transform:uppercase;color:var(--blanco);">
+            Editar Candidata
+          </h3>
+        </div>
+        <button type="button" class="btn-modal-close" id="btnCloseEditorModal" aria-label="Cerrar modal">✕</button>
+      </div>
+
+      <form id="candidateEditorForm" class="candidate-editor-body">
+        <input type="hidden" id="editCandId" />
+
+        <!-- Columna Izquierda: Fotografía & Previsualizador -->
+        <div class="cand-editor-photo-col">
+          <label class="field-label">Fotografía de la Participante</label>
+          <div class="cand-photo-frame">
+            <img id="editCandPhotoPreview" src="" alt="Vista previa de la candidata" />
+            <div class="cand-photo-badge" id="editCandNumberBadge">#01</div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;width:100%;">
+            <!-- Subida de archivo local (PC o Celular) -->
+            <input type="file" id="editCandFileInput" accept="image/*" style="display:none;" />
+            <button type="button" id="btnTriggerPhotoUpload" class="btn-magnetic-fucsia" style="width:100%;justify-content:center;padding:11px 14px;font-size:0.76rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+              <span>📁 Subir Foto desde mi Equipo</span>
+            </button>
+
+            <!-- Enlace web directo -->
+            <div class="field-group" style="margin-bottom:0;">
+              <label class="field-label" for="editCandPhotoUrlInput" style="font-size:0.65rem;">O ingresar enlace de imagen (URL):</label>
+              <input type="url" id="editCandPhotoUrlInput" class="modern-input" placeholder="https://..." style="padding:9px 12px;font-size:0.8rem;" />
+            </div>
+
+            <!-- Monograma oficial -->
+            <button type="button" id="btnUseDefaultPortrait" class="btn-glass-secondary" style="padding:7px 12px;font-size:0.68rem;justify-content:center;">
+              Restablecer a Ilustración Oficial
+            </button>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Información y Biografía -->
+        <div class="cand-editor-fields-col">
+          <div class="editor-fields-grid">
+            <div class="field-group" style="grid-column: span 8;">
+              <label class="field-label" for="editCandNameInput">Nombre Completo *</label>
+              <input type="text" id="editCandNameInput" class="modern-input" placeholder="Ej: Valentina Rojas Muñoz" required />
+            </div>
+
+            <div class="field-group" style="grid-column: span 4;">
+              <label class="field-label" for="editCandAgeInput">Edad *</label>
+              <input type="number" id="editCandAgeInput" class="modern-input" min="14" max="25" value="17" required />
+            </div>
+
+            <div class="field-group" style="grid-column: span 6;">
+              <label class="field-label" for="editCandSectorInput">Sector de Chimbarongo *</label>
+              <input type="text" id="editCandSectorInput" list="chimbarongoSectorsList" class="modern-input" placeholder="Ej: Convento Viejo" required />
+              <datalist id="chimbarongoSectorsList">
+                <option value="Centro de Chimbarongo"></option>
+                <option value="Convento Viejo"></option>
+                <option value="Tinguiririca"></option>
+                <option value="Peor es Nada"></option>
+                <option value="San Juan de la Sierra"></option>
+                <option value="Romeral"></option>
+                <option value="Cuesta Lo González"></option>
+                <option value="Las Mariposas"></option>
+                <option value="Codegua"></option>
+                <option value="Huemul"></option>
+                <option value="San Enrique"></option>
+                <option value="La Platina"></option>
+              </datalist>
+            </div>
+
+            <div class="field-group" style="grid-column: span 6;">
+              <label class="field-label" for="editCandSchoolInput">Colegio o Institución</label>
+              <input type="text" id="editCandSchoolInput" class="modern-input" placeholder="Ej: Liceo Bicentenario Chimbarongo" />
+            </div>
+
+            <div class="field-group" style="grid-column: 1 / -1;">
+              <div class="field-label-row">
+                <label class="field-label" for="editCandQuoteInput">Frase o Mensaje de la Participante *</label>
+                <span id="quoteCharCounter" style="font-size:0.68rem;color:var(--lila);">0/220</span>
+              </div>
+              <textarea id="editCandQuoteInput" class="modern-input" rows="3" maxlength="220" placeholder="Escribe el mensaje o sueño que la candidata desea transmitir a la comuna..." style="resize:vertical;" required></textarea>
+            </div>
+
+            <div class="field-group" style="grid-column: span 8;">
+              <label class="field-label" for="editCandHobbiesInput">Pasatiempos / Actividades</label>
+              <input type="text" id="editCandHobbiesInput" class="modern-input" placeholder="Ej: Vóleibol · Danza · Acción social" />
+            </div>
+
+            <div class="field-group" style="grid-column: span 4;">
+              <label class="field-label">Votos Registrados</label>
+              <div class="modern-input" style="background: rgba(11,2,19,0.75); display: flex; align-items: center; justify-content: space-between; border-color: rgba(200,155,221,0.22); cursor: not-allowed; padding: 10px 14px;">
+                <span id="editCandVotesDisplay" style="color: var(--rosa-pop); font-weight: 900; font-size: 0.95rem;">0 votos</span>
+                <span style="font-size: 0.65rem; color: var(--lila); background: rgba(91,43,136,0.3); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(200,155,221,0.25);">🔒 Inmutable</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-actions-row">
+            <button type="button" id="btnCancelCandEdit" class="btn-glass-secondary" style="flex:0.35;justify-content:center;">
+              Cancelar
+            </button>
+            <button type="submit" id="btnSaveCandidate" class="btn-magnetic-fucsia" style="flex:1;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Guardar Participante</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Contenedor para Alertas Flotantes (Toasts) -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Script Modular del Panel de Administración -->
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>
+

@@ -6,7 +6,8 @@ import {
   INITIAL_CANDIDATES,
   DYNAMIC_PODIUM_PHRASES,
   INITIAL_AUDIT_LOGS,
-  createEditorialPortrait
+  createEditorialPortrait,
+  STORAGE_KEYS
 } from './data.js';
 
 import {
@@ -19,14 +20,36 @@ import {
   BotShieldTelemetry
 } from './security.js';
 
-const STORAGE_KEYS = {
-  CANDIDATES: 'm17_chimbarongo_candidates_2026_v3',
-  VOTED_RUTS: 'm17_chimbarongo_voted_ruts_2026_v3',
-  VOTED_EMAILS: 'm17_chimbarongo_voted_emails_2026_v3',
-  VOTED_DEVICES: 'm17_chimbarongo_voted_devices_2026_v3',
-  AUDIT_LOGS: 'm17_chimbarongo_audit_logs_2026_v3',
-  BLOCKED_COUNT: 'm17_chimbarongo_blocked_count_2026_v3'
-};
+// Compresor y optimizador de imágenes para almacenamiento ágil en localStorage
+function resizeImageToDataUrl(file, maxWidth = 900, maxHeight = 1200, quality = 0.84) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('No se pudo cargar la imagen para redimensionar.'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Error al leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
+}
 
 class Miss17VotingApp {
   constructor() {
@@ -251,7 +274,6 @@ class Miss17VotingApp {
     this.renderTicker();
     this.renderPodium(highlightCandidateId);
     this.renderCandidatesGrid();
-    this.renderAdminTables();
     this.updateDeviceLabStatus();
   }
 
@@ -477,57 +499,6 @@ class Miss17VotingApp {
       .join('');
   }
 
-  renderAdminTables() {
-    const candTbody = document.getElementById('adminCandidatesTableBody');
-    const auditTbody = document.getElementById('auditLogTableBody');
-    const total = Math.max(this.getTotalVotes(), 1);
-
-    if (candTbody) {
-      const sorted = this.getSortedRanking();
-      candTbody.innerHTML = sorted
-        .map((c, index) => {
-          const pct = ((c.votes / total) * 100).toFixed(1);
-          return `
-            <tr>
-              <td><strong>#0${c.number}</strong> <span style="color:var(--lila);">(TOP ${index + 1})</span></td>
-              <td><strong>${c.name}</strong><br/><span style="font-size:0.74rem;color:var(--lila);">${c.age} años</span></td>
-              <td>${c.sector}</td>
-              <td><strong style="color:var(--rosa-pop);font-size:0.96rem;">${c.votes} votos reales</strong></td>
-              <td>${pct}%</td>
-              <td>
-                <button type="button" class="btn-glass-secondary btn-delete-cand" data-id="${c.id}" style="padding:6px 12px;font-size:0.68rem;border-color:#F43F5E;color:#FDA4AF;">
-                  Eliminar
-                </button>
-              </td>
-            </tr>
-          `;
-        })
-        .join('');
-    }
-
-    if (auditTbody) {
-      auditTbody.innerHTML = this.auditLogs
-        .map(
-          (log) => `
-          <tr>
-            <td><code style="color:var(--rosa-pop);font-weight:700;">${log.id}</code></td>
-            <td>${log.timestamp}</td>
-            <td><strong>${log.maskedRut}</strong></td>
-            <td><code>${log.fingerprint}</code></td>
-            <td><strong>${log.candidateName}</strong></td>
-            <td>
-              <span class="badge-status ${log.status === 'VERIFIED' ? 'verified' : 'blocked'}">
-                ${log.status === 'VERIFIED' ? 'VERIFICADO' : 'BLOQUEADO'}
-              </span>
-            </td>
-            <td style="color:var(--lila);">${log.detail}</td>
-          </tr>
-        `
-        )
-        .join('');
-    }
-  }
-
   updateDeviceLabStatus() {
     const statusText = document.getElementById('labDeviceStatusText');
     if (!statusText) return;
@@ -543,18 +514,19 @@ class Miss17VotingApp {
   // EVENTOS E INTERACCIONES
   // ==========================================================================
   bindEvents() {
+    // Sincronización en tiempo real si se realizan cambios en admin.html
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEYS.CANDIDATES) {
+        this.candidates = this.loadFromStorage(STORAGE_KEYS.CANDIDATES, INITIAL_CANDIDATES);
+        this.renderAll();
+      }
+    });
+
     document.addEventListener('click', (e) => {
       const voteTrigger = e.target.closest('.btn-open-vote');
       if (voteTrigger) {
         const candId = voteTrigger.getAttribute('data-id');
         this.openVoteModal(candId);
-      }
-
-      const deleteBtn = e.target.closest('.btn-delete-cand');
-      if (deleteBtn) {
-        e.stopPropagation();
-        const candId = deleteBtn.getAttribute('data-id');
-        this.deleteCandidate(candId);
       }
     });
 
@@ -1132,66 +1104,6 @@ class Miss17VotingApp {
       this.phraseIndex += 1;
       this.renderPodium();
     }, 5500);
-  }
-
-  handleAddCandidate() {
-    const name = document.getElementById('newCandName')?.value.trim();
-    const age = Number(document.getElementById('newCandAge')?.value || 17);
-    const sector = document.getElementById('newCandSector')?.value.trim();
-    const school = document.getElementById('newCandSchool')?.value.trim() || 'Chimbarongo';
-    const quote = document.getElementById('newCandQuote')?.value.trim();
-    const fileInput = document.getElementById('newCandPhotoFile');
-
-    if (!name || !sector || !quote) return;
-
-    const nextNum = this.candidates.length > 0 ? Math.max(...this.candidates.map((c) => c.number)) + 1 : 1;
-    const fallbackSvg = createEditorialPortrait(name, nextNum, '#D50078', '#32114F');
-
-    const finalizeCandidate = (avatarUrl) => {
-      const newCand = {
-        id: `cand-${Date.now()}`,
-        number: nextNum,
-        name,
-        age,
-        sector,
-        school,
-        quote,
-        votes: 115,
-        trendDelta: '+1.5%',
-        avatar: avatarUrl || 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=900&q=85',
-        fallbackAvatar: fallbackSvg
-      };
-
-      this.candidates.push(newCand);
-      this.displayOrderIds.unshift(newCand.id);
-      this.saveState();
-      this.renderAll(newCand.id);
-      document.getElementById('addCandidateForm')?.reset();
-      this.showToast(`Candidata "${name}" incorporada exitosamente.`);
-    };
-
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (e) => finalizeCandidate(e.target.result);
-      reader.readAsDataURL(fileInput.files[0]);
-    } else {
-      finalizeCandidate(null);
-    }
-  }
-
-  deleteCandidate(candId) {
-    if (this.candidates.length <= 3) {
-      this.showToast('Deben mantenerse al menos 3 candidatas para el podio TOP 3.');
-      return;
-    }
-    const target = this.candidates.find((c) => c.id === candId);
-    this.candidates = this.candidates.filter((c) => c.id !== candId);
-    this.displayOrderIds = this.displayOrderIds.filter((id) => id !== candId);
-    this.saveState();
-    this.renderAll();
-    if (target) {
-      this.showToast(`Candidata ${target.name} eliminada del listado.`);
-    }
   }
 
   showToast(message) {

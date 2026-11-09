@@ -37,7 +37,6 @@
           <li><a href="#ranking" class="nav-menu-link active">Ranking TOP 3</a></li>
           <li><a href="#candidatas" class="nav-menu-link">Candidatas</a></li>
           <li><a href="#como-votar" class="nav-menu-link">¿Cómo Votar?</a></li>
-          <li><a href="#admin-panel" class="nav-menu-link">Organización</a></li>
         </ul>
       </nav>
 
@@ -323,140 +322,6 @@
         </div>
       </div>
     </section>
-
-    <!-- ======================================================================
-         PANEL DE ORGANIZACIÓN Y PRUEBAS INTERNAS
-         ====================================================================== -->
-    <section id="admin-panel" class="command-center-section">
-      <div class="command-shell">
-        <div class="command-header">
-          <div>
-            <span style="font-family:var(--font-principal);font-size:0.68rem;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--rosa-pop);display:block;margin-bottom:4px;">
-              HERRAMIENTAS PARA LA ORGANIZACIÓN
-            </span>
-            <h2>Panel de Gestión y Pruebas</h2>
-          </div>
-
-          <div class="command-tabs" role="tablist">
-            <button type="button" class="cmd-tab-btn active" data-tab="tab-lab">Pruebas Rápidas</button>
-            <button type="button" class="cmd-tab-btn" data-tab="tab-candidatas">Gestionar Candidatas (<span id="adminCandCount">8</span>)</button>
-            <button type="button" class="cmd-tab-btn" data-tab="tab-auditoria">Conteo Exacto & Registro</button>
-          </div>
-        </div>
-
-        <!-- TAB 1: Pruebas Rápidas -->
-        <div class="cmd-panel active" id="tab-lab">
-          <div class="lab-cards-grid">
-            <div class="lab-card">
-              <div>
-                <h4>Votar Nuevamente desde este Equipo</h4>
-                <p id="labDeviceStatusText">Puedes reiniciar tu prueba para votar de nuevo con otro RUT.</p>
-              </div>
-              <button type="button" id="btnResetMyDeviceVote" class="btn-glass-secondary" style="width:100%;">
-                🔄 Habilitar para Votar de Nuevo
-              </button>
-            </div>
-
-            <div class="lab-card">
-              <div>
-                <h4>Probar Intento Duplicado</h4>
-                <p>Comprueba qué mensaje recibe alguien que intenta votar una segunda vez con el mismo RUT.</p>
-              </div>
-              <button type="button" id="btnTestDuplicateRut" class="btn-glass-secondary" style="width:100%;">
-                Probar RUT Repetido
-              </button>
-            </div>
-
-            <div class="lab-card">
-              <div>
-                <h4>Simular Votos en Vivo (+5 Votos)</h4>
-                <p>Agrega 5 votos al azar para ver cómo cambian los porcentajes y el podio en tiempo real.</p>
-              </div>
-              <button type="button" id="btnBurstFiveVotes" class="btn-magnetic-fucsia" style="width:100%;">
-                ✨ Simular 5 Votos en Vivo
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 2: Gestión de Candidatas -->
-        <div class="cmd-panel" id="tab-candidatas">
-          <form id="addCandidateForm" class="admin-add-grid">
-            <div>
-              <label class="field-label" for="newCandName">Nombre Completo *</label>
-              <input type="text" id="newCandName" class="modern-input" placeholder="Ej: Sofía González Pérez" required />
-            </div>
-            <div>
-              <label class="field-label" for="newCandAge">Edad *</label>
-              <input type="number" id="newCandAge" class="modern-input" min="14" max="22" value="17" required />
-            </div>
-            <div>
-              <label class="field-label" for="newCandSector">Sector de Chimbarongo *</label>
-              <input type="text" id="newCandSector" class="modern-input" placeholder="Ej: Convento Viejo" required />
-            </div>
-            <div>
-              <label class="field-label" for="newCandSchool">Colegio o Institución</label>
-              <input type="text" id="newCandSchool" class="modern-input" placeholder="Ej: Liceo Bicentenario" />
-            </div>
-            <div style="grid-column: 1 / -1;">
-              <label class="field-label" for="newCandQuote">Frase o Mensaje de la Candidata *</label>
-              <input type="text" id="newCandQuote" class="modern-input" placeholder="Ej: Orgullosa de representar a la juventud de mi comuna..." required />
-            </div>
-            <div>
-              <label class="field-label" for="newCandPhotoFile">Fotografía (Opcional)</label>
-              <input type="file" id="newCandPhotoFile" accept="image/*" class="modern-input" style="padding:9px;" />
-            </div>
-            <div style="display:flex;align-items:flex-end;">
-              <button type="submit" class="btn-magnetic-fucsia" style="width:100%;">➕ Agregar Candidata</button>
-            </div>
-          </form>
-
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
-            <span style="font-family:var(--font-principal);font-weight:800;font-size:0.84rem;text-transform:uppercase;color:var(--rosa-muy-claro);">
-              Conteo Exacto de Votos (Visible únicamente para los administradores)
-            </span>
-            <button type="button" id="btnRestoreDefaultCandidates" class="btn-glass-secondary" style="padding:8px 16px;font-size:0.7rem;">
-              Restaurar Candidatas de Prueba
-            </button>
-          </div>
-
-          <div class="dark-table-wrap">
-            <table class="dark-table">
-              <thead>
-                <tr>
-                  <th>Nº / Posición</th>
-                  <th>Candidata</th>
-                  <th>Sector</th>
-                  <th>Votos Exactos</th>
-                  <th>% Preferencia</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody id="adminCandidatesTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- TAB 3: Bitácora y Conteo Exacto -->
-        <div class="cmd-panel" id="tab-auditoria">
-          <div class="dark-table-wrap">
-            <table class="dark-table">
-              <thead>
-                <tr>
-                  <th>N° Comprobante</th>
-                  <th>Hora</th>
-                  <th>RUT</th>
-                  <th>Candidata Apoyada</th>
-                  <th>Estado</th>
-                  <th>Detalle</th>
-                </tr>
-              </thead>
-              <tbody id="auditLogTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <!-- FOOTER OFICIAL -->
@@ -620,6 +485,8 @@
       </div>
     </div>
   </div>
+
+
 
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 

@@ -72,6 +72,7 @@ const server = http.createServer(async (req, res) => {
 
   // Archivos estáticos
   let safePath = pathname === '/' ? '/index.html' : pathname;
+  if (safePath === '/admin') safePath = '/admin.html';
   let filePath = path.join(ROOT, safePath);
 
   // Prevenir directory traversal

@@ -2,6 +2,7 @@
 // Verifica la firma HMAC del código OTP, valida unicidad y emite un comprobante criptográfico del voto.
 
 const crypto = require('crypto');
+const { recordVoteInSupabase } = require('./supabase-helper');
 
 function cleanRut(rut) {
   return String(rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
@@ -68,6 +69,27 @@ module.exports = async function handler(req, res) {
     const receiptHash = 'M17-' + crypto.createHash('sha256').update(receiptSeed).digest('hex').slice(0, 10).toUpperCase();
     const rutHash = crypto.createHash('sha256').update(cleanRut(rut)).digest('hex').slice(0, 16);
 
+    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || null;
+
+    // Si Supabase está configurado, guardar el voto y actualizar el conteo atómicamente
+    const dbSave = await recordVoteInSupabase({
+      cleanRut: cleanRut(rut),
+      maskedRut: maskRut(rut),
+      email: email.toLowerCase().trim(),
+      candidateId,
+      fingerprint,
+      receiptId: receiptHash,
+      ipAddress: clientIp
+    });
+
+    if (dbSave.isConfigured && !dbSave.success) {
+      return res.status(400).json({
+        ok: false,
+        code: dbSave.code || 'VOTE_FAILED',
+        error: dbSave.error || 'No fue posible registrar el voto en la base de datos.'
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       receipt: {
@@ -76,7 +98,8 @@ module.exports = async function handler(req, res) {
         maskedRut: maskRut(rut),
         rutHash,
         fingerprintShort: String(fingerprint || '').slice(0, 10).toUpperCase(),
-        verifiedAt: timestamp
+        verifiedAt: timestamp,
+        dbSynced: dbSave.isConfigured
       }
     });
   } catch (err) {

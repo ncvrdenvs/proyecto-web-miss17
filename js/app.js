@@ -11,6 +11,11 @@ import {
 } from './data.js';
 
 import {
+  fetchCandidatesFromDb,
+  subscribeToCandidatesRealtime
+} from './supabase-client.js';
+
+import {
   formatRut,
   validateRut,
   generateRandomValidRut,
@@ -89,6 +94,40 @@ class Miss17VotingApp {
     this.renderAll();
     this.bindEvents();
     this.startPhraseRotation();
+
+    // Sincronización en la nube con Supabase
+    this.syncCandidatesFromCloud();
+    this.subscribeToLiveUpdates();
+  }
+
+  async syncCandidatesFromCloud() {
+    try {
+      const cloud = await fetchCandidatesFromDb();
+      if (cloud && cloud.length > 0) {
+        this.candidates = cloud;
+        this.saveState();
+        this.renderAll();
+      }
+    } catch (err) {
+      console.warn('[Supabase Cloud Sync]', err);
+    }
+  }
+
+  subscribeToLiveUpdates() {
+    subscribeToCandidatesRealtime((payload) => {
+      if (payload && payload.new) {
+        const updated = payload.new;
+        const idx = this.candidates.findIndex((c) => c.id === updated.id);
+        if (idx !== -1) {
+          this.candidates[idx].votes = updated.votes;
+          this.candidates[idx].trendDelta = updated.trend_delta || '+3.5%';
+          this.candidates[idx].name = updated.name;
+          this.candidates[idx].avatar = updated.avatar;
+          this.saveState();
+          this.renderAll();
+        }
+      }
+    });
   }
 
   // ==========================================================================

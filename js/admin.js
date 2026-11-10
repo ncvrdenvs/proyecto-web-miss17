@@ -9,6 +9,15 @@ import {
   STORAGE_KEYS
 } from './data.js';
 
+import {
+  getSupabaseConfig,
+  saveManualSupabaseConfig,
+  fetchCandidatesFromDb,
+  updateCandidateInDb,
+  uploadCandidatePhotoToStorage,
+  subscribeToCandidatesRealtime
+} from './supabase-client.js';
+
 // Compresor y optimizador de imágenes vía Canvas HTML5 (JPEG 900x1200 ~120KB)
 function resizeImageToDataUrl(file, maxWidth = 900, maxHeight = 1200, quality = 0.85) {
   return new Promise((resolve, reject) => {
@@ -83,6 +92,120 @@ class Miss17AdminSuite {
     this.renderAuthState();
     this.bindEvents();
     this.initAuroraCanvas();
+    this.checkSupabaseConnection();
+  }
+
+  // ==========================================================================
+  // ESTADO Y GESTIÓN DE SUPABASE
+  // ==========================================================================
+  async checkSupabaseConnection() {
+    const dot = document.getElementById('supabaseStatusDot');
+    const text = document.getElementById('supabaseStatusText');
+    const modalDetail = document.getElementById('supabaseModalStatusDetail');
+    const modalPill = document.getElementById('supabaseModalStatusPill');
+
+    const config = await getSupabaseConfig();
+
+    if (config && config.url && config.anonKey) {
+      this.supabaseConnected = true;
+      if (dot) {
+        dot.style.background = '#6EE7B7';
+        dot.style.boxShadow = '0 0 10px #6EE7B7';
+      }
+      if (text) {
+        text.textContent = 'Supabase Conectado';
+      }
+      if (modalDetail) {
+        modalDetail.textContent = config.source === 'ENVIRONMENT'
+          ? 'Enlazado por Variables de Entorno (Vercel)'
+          : 'Enlazado por Configuración Directa';
+      }
+      if (modalPill) {
+        modalPill.className = 'badge-status verified';
+        modalPill.textContent = 'CONECTADO';
+      }
+
+      // Pre-cargar valores en el formulario del modal
+      const urlInput = document.getElementById('supabaseUrlInput');
+      const keyInput = document.getElementById('supabaseKeyInput');
+      if (urlInput && !urlInput.value) urlInput.value = config.url;
+      if (keyInput && !keyInput.value) keyInput.value = config.anonKey;
+
+      // Intentar sincronizar candidatas desde la nube
+      this.syncCandidatesFromCloud(false);
+
+      // Suscribirse a cambios en tiempo real
+      subscribeToCandidatesRealtime((payload) => {
+        if (payload && payload.new) {
+          const updated = payload.new;
+          const idx = this.candidates.findIndex((c) => c.id === updated.id);
+          if (idx !== -1) {
+            this.candidates[idx].votes = updated.votes;
+            this.candidates[idx].name = updated.name;
+            this.candidates[idx].avatar = updated.avatar;
+            this.saveState();
+            this.renderAll();
+          }
+        }
+      });
+    } else {
+      this.supabaseConnected = false;
+      if (dot) {
+        dot.style.background = '#FBBF24';
+        dot.style.boxShadow = '0 0 8px rgba(251,191,36,0.5)';
+      }
+      if (text) {
+        text.textContent = 'Modo Local';
+      }
+      if (modalDetail) {
+        modalDetail.textContent = 'Modo Local (Almacenamiento en Navegador)';
+      }
+      if (modalPill) {
+        modalPill.className = 'badge-status blocked';
+        modalPill.textContent = 'LOCAL';
+      }
+    }
+  }
+
+  async syncCandidatesFromCloud(showFeedback = true) {
+    if (showFeedback) this.showToast('Consultando candidatas en Supabase...');
+    const cloudCandidates = await fetchCandidatesFromDb();
+    if (cloudCandidates && cloudCandidates.length > 0) {
+      this.candidates = cloudCandidates;
+      this.saveState();
+      this.renderAll();
+      if (showFeedback) this.showToast('✅ Candidatas sincronizadas desde Supabase.');
+    } else if (showFeedback) {
+      this.showToast('No se encontraron candidatas en la tabla. Ejecuta el script SQL en Supabase.');
+    }
+  }
+
+  openSupabaseModal() {
+    document.getElementById('supabaseConfigModalBackdrop')?.classList.add('open');
+  }
+
+  closeSupabaseModal() {
+    document.getElementById('supabaseConfigModalBackdrop')?.classList.remove('open');
+  }
+
+  async handleSaveSupabaseConfig(e) {
+    e.preventDefault();
+    const url = document.getElementById('supabaseUrlInput')?.value.trim();
+    const key = document.getElementById('supabaseKeyInput')?.value.trim();
+
+    if (!url || !key) {
+      this.showToast('Ingresa la URL y la Anon Key de tu proyecto Supabase.');
+      return;
+    }
+
+    this.showToast('Guardando credenciales y verificando enlace...');
+    const saved = saveManualSupabaseConfig(url, key);
+    if (saved) {
+      await this.checkSupabaseConnection();
+      await this.syncCandidatesFromCloud(true);
+      this.closeSupabaseModal();
+      this.showToast('🎉 ¡Conectado exitosamente con Supabase!');
+    }
   }
 
   // ==========================================================================
@@ -507,6 +630,15 @@ class Miss17AdminSuite {
           fallbackAvatar: fallbackSvg
         };
         this.showToast(`✨ Datos y fotografía de "${name}" actualizados.`);
+
+        // Sincronizar actualización con Supabase si está conectado
+        if (this.supabaseConnected) {
+          updateCandidateInDb(this.candidates[idx]).then((res) => {
+            if (res && res.ok) {
+              this.showToast(`☁️ Cambios de "${name}" guardados en Supabase.`);
+            }
+          });
+        }
       }
     } else {
       // Creación de nueva participante (Inicia con 0 votos reales de los vecinos)
@@ -699,6 +831,29 @@ class Miss17AdminSuite {
       this.openCandidateEditor(null);
     });
 
+    // Modal de configuración de Supabase
+    document.getElementById('btnOpenSupabaseModal')?.addEventListener('click', () => {
+      this.openSupabaseModal();
+    });
+
+    document.getElementById('btnCloseSupabaseModal')?.addEventListener('click', () => {
+      this.closeSupabaseModal();
+    });
+
+    document.getElementById('supabaseConfigModalBackdrop')?.addEventListener('click', (e) => {
+      if (e.target.id === 'supabaseConfigModalBackdrop') {
+        this.closeSupabaseModal();
+      }
+    });
+
+    document.getElementById('supabaseConfigForm')?.addEventListener('submit', (e) => {
+      this.handleSaveSupabaseConfig(e);
+    });
+
+    document.getElementById('btnSyncCandidatesWithDb')?.addEventListener('click', () => {
+      this.syncCandidatesFromCloud(true);
+    });
+
     document.getElementById('btnCloseEditorModal')?.addEventListener('click', () => {
       this.closeCandidateEditor();
     });
@@ -734,7 +889,19 @@ class Miss17AdminSuite {
         if (previewImg) previewImg.src = optimizedDataUrl;
         const urlInput = document.getElementById('editCandPhotoUrlInput');
         if (urlInput) urlInput.value = '';
-        this.showToast('✅ Fotografía cargada y optimizada.');
+        this.showToast('✅ Fotografía cargada en vista previa.');
+
+        // Si Supabase está conectado, subir al bucket candidate-photos
+        if (this.supabaseConnected) {
+          this.showToast('☁️ Subiendo a Supabase Storage (candidate-photos)...');
+          const candId = this.editingCandidateId || `cand-${Date.now()}`;
+          const uploadRes = await uploadCandidatePhotoToStorage(file, candId);
+          if (uploadRes && uploadRes.ok && uploadRes.publicUrl) {
+            this.tempUploadedPhotoUrl = uploadRes.publicUrl;
+            if (urlInput) urlInput.value = uploadRes.publicUrl;
+            this.showToast('✅ ¡Fotografía guardada en Storage CDN!');
+          }
+        }
       } catch {
         this.showToast('Error al procesar la fotografía. Intenta con otra imagen.');
       }

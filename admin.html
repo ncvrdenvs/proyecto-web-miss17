@@ -479,6 +479,11 @@
         </div>
 
         <div class="admin-nav-actions">
+          <button type="button" id="btnOpenSupabaseModal" class="btn-glass-secondary" style="font-size:0.75rem;padding:9px 14px;border-color:rgba(110,231,183,0.4);display:inline-flex;align-items:center;gap:7px;">
+            <span id="supabaseStatusDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#FBBF24;box-shadow:0 0 8px rgba(251,191,36,0.6);transition:all 0.3s ease;"></span>
+            <span id="supabaseStatusText" style="font-weight:700;">Base de Datos</span>
+          </button>
+
           <a href="/" target="_blank" class="btn-glass-secondary" style="font-size:0.75rem;padding:9px 15px;text-decoration:none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
             <span>Ver Votación Pública</span>
@@ -941,6 +946,89 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL DE CONFIGURACIÓN Y ESTADO DE SUPABASE
+       ======================================================================== -->
+  <div class="modal-backdrop" id="supabaseConfigModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="supabaseModalTitle">
+    <div class="candidate-editor-modal" style="max-width: 640px;">
+      <div class="modal-top-banner">
+        <div>
+          <span style="font-family:var(--font-principal);font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;color:var(--rosa-pop);display:block;">
+            INFRAESTRUCTURA CLOUD · MISS 17 CHIMBARONGO
+          </span>
+          <h3 id="supabaseModalTitle" style="font-family:var(--font-principal);font-weight:900;font-size:1.18rem;text-transform:uppercase;color:var(--blanco);">
+            Conexión con Supabase
+          </h3>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseSupabaseModal" aria-label="Cerrar ventana">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <div style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+        <!-- Indicador de Estado Actual -->
+        <div id="supabaseModalStatusBox" style="background: rgba(11,2,19,0.7); border: 1px solid rgba(200,155,221,0.25); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--lila);">Estado del Enlace</div>
+            <div id="supabaseModalStatusDetail" style="font-weight: 800; font-size: 0.95rem; color: var(--blanco); margin-top: 2px;">
+              Detectando conexión...
+            </div>
+          </div>
+          <span id="supabaseModalStatusPill" class="badge-status verified" style="font-size: 0.72rem;">Activo</span>
+        </div>
+
+        <p style="font-size: 0.82rem; color: var(--lila); line-height: 1.5; margin: 0;">
+          Supabase provee la base de datos PostgreSQL en la nube, el almacenamiento CDN para fotografías de alta resolución en el bucket <code style="color:var(--rosa-pop);">candidate-photos</code> y la transmisión en tiempo real (WebSockets) para el podio de votaciones.
+        </p>
+
+        <!-- Formulario de Configuración Directa -->
+        <form id="supabaseConfigForm" style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="field-group" style="margin-bottom: 0;">
+            <label class="field-label" for="supabaseUrlInput">Project URL de Supabase *</label>
+            <input
+              type="url"
+              id="supabaseUrlInput"
+              class="modern-input"
+              placeholder="https://abcdefghijklm.supabase.co"
+              autocomplete="off"
+              required
+            />
+          </div>
+
+          <div class="field-group" style="margin-bottom: 0;">
+            <label class="field-label" for="supabaseKeyInput">Anon Public Key (API Key) *</label>
+            <input
+              type="password"
+              id="supabaseKeyInput"
+              class="modern-input"
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              autocomplete="off"
+              required
+            />
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap;">
+            <button type="submit" id="btnSaveSupabaseConfig" class="btn-magnetic-fucsia" style="flex: 1; min-width: 200px; justify-content: center; padding: 12px 16px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Conectar y Probar</span>
+            </button>
+
+            <button type="button" id="btnSyncCandidatesWithDb" class="btn-glass-secondary" style="justify-content: center; padding: 12px 16px; border-color: rgba(110,231,183,0.45); color: #6EE7B7;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Sincronizar Nube</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Ayuda y Vercel Tips -->
+        <div style="background: rgba(91,43,136,0.22); border: 1px solid rgba(242,41,155,0.22); border-radius: 12px; padding: 12px 14px; font-size: 0.73rem; color: var(--lila); line-height: 1.45;">
+          <strong style="color: var(--blanco); display: block; margin-bottom: 4px;">🚀 Despliegue en Vercel:</strong>
+          Si despliegas en Vercel, también puedes agregar en <code style="color:var(--rosa-pop);">Settings → Environment Variables</code> las variables <code style="color:var(--rosa-pop);">SUPABASE_URL</code>, <code style="color:var(--rosa-pop);">SUPABASE_ANON_KEY</code> y <code style="color:var(--rosa-pop);">SUPABASE_SERVICE_ROLE_KEY</code> para enlace 100% automático.
+        </div>
+      </div>
     </div>
   </div>
 

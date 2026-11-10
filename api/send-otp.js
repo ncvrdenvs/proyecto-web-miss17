@@ -3,6 +3,7 @@
 // En producción en Vercel, si existe process.env.RESEND_API_KEY, envía el correo real automáticamente.
 
 const crypto = require('crypto');
+const { checkRutAlreadyVoted } = require('./supabase-helper');
 
 const DISPOSABLE_DOMAINS = new Set([
   'yopmail.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com',
@@ -99,6 +100,16 @@ module.exports = async function handler(req, res) {
         ok: false,
         code: 'INVALID_RUT',
         error: 'El RUT ingresado no es válido según la verificación oficial Módulo 11.'
+      });
+    }
+
+    // 3.1 Verificación en Supabase: comprobar si el RUT ya emitió su voto
+    const alreadyVotedInDb = await checkRutAlreadyVoted(rut);
+    if (alreadyVotedInDb) {
+      return res.status(400).json({
+        ok: false,
+        code: 'ALREADY_VOTED',
+        error: 'Este RUT ya emitió su voto oficial en Miss 17 Chimbarongo. Solo se permite un voto por persona.'
       });
     }
 

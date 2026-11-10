@@ -55,7 +55,7 @@ export const INITIAL_CANDIDATES = [
     hobbies: 'Danza contemporánea · Fotografía editorial · Acción social',
     votes: 184,
     trendDelta: '+3.2%',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85',
+    avatar: '/images/cand_1.jpg',
     fallbackAvatar: createEditorialPortrait('Valentina Rojas', 1, '#D50078', '#32114F')
   },
   {
@@ -69,7 +69,7 @@ export const INITIAL_CANDIDATES = [
     hobbies: 'Vóleibol competitivo · Diseño de autor · Liderazgo estudiantil',
     votes: 176,
     trendDelta: '+2.8%',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=85',
+    avatar: '/images/cand_2.jpg',
     fallbackAvatar: createEditorialPortrait('Florencia Soto', 2, '#F2299B', '#32114F')
   },
   {
@@ -83,7 +83,7 @@ export const INITIAL_CANDIDATES = [
     hobbies: 'Música acústica · Debate juvenil · Protección animal',
     votes: 165,
     trendDelta: '+2.1%',
-    avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85',
+    avatar: '/images/cand_3.jpg',
     fallbackAvatar: createEditorialPortrait('Isidora Pino', 3, '#5B2B88', '#D50078')
   },
   {
@@ -97,7 +97,7 @@ export const INITIAL_CANDIDATES = [
     hobbies: 'Atletismo · Arte digital · Astronomía',
     votes: 149,
     trendDelta: '+1.7%',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=85',
+    avatar: '/images/cand_4.jpg',
     fallbackAvatar: createEditorialPortrait('Martina Contreras', 4, '#D50078', '#5B2B88')
   },
   {
@@ -111,7 +111,7 @@ export const INITIAL_CANDIDATES = [
     hobbies: 'Teatro musical · Emprendimiento joven · Medioambiente',
     votes: 138,
     trendDelta: '+1.4%',
-    avatar: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=900&q=85',
+    avatar: '/images/cand_5.jpg',
     fallbackAvatar: createEditorialPortrait('Catalina Morales', 5, '#5B2B88', '#F2299B')
   },
   {
@@ -125,7 +125,7 @@ export const INITIAL_CANDIDATES = [
     hobbies: 'Patinaje artístico · Literatura · Comunicación audiovisual',
     votes: 129,
     trendDelta: '+1.2%',
-    avatar: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=900&q=85',
+    avatar: '/images/cand_6.jpg',
     fallbackAvatar: createEditorialPortrait('Antonella Vargas', 6, '#F2299B', '#5B2B88')
   },
   {
@@ -139,7 +139,7 @@ export const INITIAL_CANDIDATES = [
     hobbies: 'Básquetbol · Podcasting · Voluntariado',
     votes: 118,
     trendDelta: '+1.0%',
-    avatar: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=900&q=85',
+    avatar: '/images/cand_7.jpg',
     fallbackAvatar: createEditorialPortrait('Javiera Espinoza', 7, '#32114F', '#D50078')
   },
   {
@@ -153,7 +153,7 @@ export const INITIAL_CANDIDATES = [
     hobbies: 'Danza folclórica · Guitarra · Rescate patrimonial',
     votes: 112,
     trendDelta: '+0.9%',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=85',
+    avatar: '/images/cand_8.jpg',
     fallbackAvatar: createEditorialPortrait('Emilia Fuentes', 8, '#D50078', '#F2299B')
   }
 ];

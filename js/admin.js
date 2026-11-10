@@ -123,7 +123,7 @@ class Miss17AdminSuite {
       sessionStorage.setItem('m17_admin_auth', 'true');
       if (errorEl) errorEl.style.display = 'none';
       this.renderAuthState();
-      this.showToast('🔓 Panel de administración desbloqueado correctamente.');
+      this.showToast('Panel de administración desbloqueado.');
     } else {
       if (errorEl) errorEl.style.display = 'block';
       if (pinInput) {
@@ -131,7 +131,7 @@ class Miss17AdminSuite {
         pinInput.value = '';
         setTimeout(() => pinInput.classList.remove('invalid'), 400);
       }
-      this.showToast('❌ PIN incorrecto.');
+      this.showToast('PIN incorrecto. Intenta nuevamente.');
     }
   }
 
@@ -139,7 +139,7 @@ class Miss17AdminSuite {
     this.isAuthenticated = false;
     sessionStorage.removeItem('m17_admin_auth');
     this.renderAuthState();
-    this.showToast('🔒 Panel de administración bloqueado.');
+    this.showToast('Panel de administración bloqueado.');
   }
 
   changePin(newPin) {
@@ -151,7 +151,7 @@ class Miss17AdminSuite {
     localStorage.setItem('m17_admin_custom_pin', newPin);
     const pinDisplay = document.getElementById('currentPinDisplay');
     if (pinDisplay) pinDisplay.textContent = newPin;
-    this.showToast(`🔑 PIN de administración actualizado a: ${newPin}`);
+    this.showToast(`PIN de administración actualizado a: ${newPin}`);
   }
 
   // ==========================================================================
@@ -179,6 +179,7 @@ class Miss17AdminSuite {
 
     const leaderNameEl = document.getElementById('adminKpiLeaderName');
     const leaderVotesEl = document.getElementById('adminKpiLeaderVotes');
+    const leaderThumbEl = document.getElementById('adminKpiLeaderThumb');
     const countEl = document.getElementById('adminKpiCount');
     const totalVotesEl = document.getElementById('adminKpiTotalVotes');
     const blockedEl = document.getElementById('adminKpiBlockedBots');
@@ -186,6 +187,9 @@ class Miss17AdminSuite {
     if (sorted[0]) {
       if (leaderNameEl) leaderNameEl.textContent = sorted[0].name;
       if (leaderVotesEl) leaderVotesEl.textContent = `${Number(sorted[0].votes).toLocaleString('es-CL')} votos acumulados`;
+      if (leaderThumbEl && sorted[0].avatar) {
+        leaderThumbEl.src = sorted[0].avatar;
+      }
     }
     if (countEl) countEl.textContent = String(this.candidates.length);
     if (totalVotesEl) totalVotesEl.textContent = totalVotes.toLocaleString('es-CL');
@@ -211,7 +215,9 @@ class Miss17AdminSuite {
     if (list.length === 0) {
       grid.innerHTML = `
         <div style="grid-column: 1 / -1; padding: 48px 20px; text-align: center; color: var(--lila);">
-          <div style="font-size: 2.2rem; margin-bottom: 8px;">🔍</div>
+          <div style="margin-bottom: 12px; opacity: 0.65;">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--rosa-pop)" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
           <p style="font-weight: 700;">No se encontraron participantes con el término "${this.searchQuery}".</p>
         </div>
       `;
@@ -227,7 +233,7 @@ class Miss17AdminSuite {
         
         let rankBadge = `<span class="admin-cand-rank-badge">#${idx + 1} EN RANKING</span>`;
         if (idx === 0) {
-          rankBadge = `<span class="admin-cand-rank-badge" style="background:var(--fucsia-miss-17);box-shadow:0 0 14px var(--rosa-pop);">👑 TOP 1 · LÍDER</span>`;
+          rankBadge = `<span class="admin-cand-rank-badge" style="background:var(--fucsia-miss-17);box-shadow:0 0 14px var(--rosa-pop);display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 14h14v2H5v-2z"/></svg> TOP 1 · LÍDER</span>`;
         } else if (idx < 3) {
           rankBadge = `<span class="admin-cand-rank-badge" style="background:var(--violeta-17);">TOP ${idx + 1} · PODIO</span>`;
         }
@@ -246,8 +252,14 @@ class Miss17AdminSuite {
             <div class="admin-cand-card-body">
               <div>
                 <h4 class="admin-cand-name">${cand.name}</h4>
-                <div class="admin-cand-sector">📍 ${cand.sector} · ${cand.age} años</div>
-                <div class="admin-cand-school">🏫 ${cand.school || 'Chimbarongo'}</div>
+                <div class="admin-cand-sector" style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" style="flex-shrink:0;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>${cand.sector} · ${cand.age} años</span>
+                </div>
+                <div class="admin-cand-school" style="display:flex;align-items:center;gap:5px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;"><path d="M4 22h16"/><path d="M2 11h20"/><path d="m12 2 10 9H2l10-9Z"/><path d="M6 11v11"/><path d="M18 11v11"/></svg>
+                  <span>${cand.school || 'Chimbarongo'}</span>
+                </div>
                 <p class="admin-cand-quote">“${cand.quote}”</p>
               </div>
 
@@ -338,12 +350,12 @@ class Miss17AdminSuite {
     tbody.innerHTML = sorted
       .map((c, index) => {
         const pct = ((c.votes / total) * 100).toFixed(1);
-        const diff = index === 0 ? '👑 LÍDER' : `-${Number(leaderVotes - c.votes).toLocaleString('es-CL')} votos`;
-        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+        const diff = index === 0 ? 'LÍDER OFICIAL' : `-${Number(leaderVotes - c.votes).toLocaleString('es-CL')} votos`;
+        const rankLabel = index === 0 ? '👑 1° Lugar (Líder)' : index === 1 ? '🥈 2° Lugar (Podio)' : index === 2 ? '🥉 3° Lugar (Podio)' : `${index + 1}° Lugar`;
 
         return `
           <tr>
-            <td><strong>${medal} Lugar</strong></td>
+            <td><strong>${rankLabel}</strong></td>
             <td>
               <strong>${c.name}</strong> (#0${c.number})
             </td>
@@ -547,7 +559,7 @@ class Miss17AdminSuite {
     this.candidates = JSON.parse(JSON.stringify(INITIAL_CANDIDATES));
     this.saveState();
     this.renderAll();
-    this.showToast('🔄 Lista de candidatas oficiales restablecida.');
+    this.showToast('Lista de candidatas oficiales restablecida.');
   }
 
   // ==========================================================================
@@ -556,7 +568,7 @@ class Miss17AdminSuite {
   resetMyDeviceVote() {
     try {
       localStorage.removeItem(STORAGE_KEYS.VOTED_DEVICES);
-      this.showToast('✅ Huella de este navegador limpiada. Puedes votar nuevamente en la página pública.');
+      this.showToast('Huella de este navegador limpiada. Puedes votar nuevamente en la página pública.');
     } catch {
       this.showToast('No se pudo restablecer la huella.');
     }
@@ -573,7 +585,7 @@ class Miss17AdminSuite {
     });
 
     this.downloadFile('reporte_votacion_miss17_chimbarongo.csv', 'text/csv', csv);
-    this.showToast('📥 Reporte de candidatas descargado.');
+    this.showToast('Reporte de candidatas descargado (CSV).');
   }
 
   exportAuditCsv() {
@@ -582,7 +594,7 @@ class Miss17AdminSuite {
       csv += `"${log.id}","${log.timestamp}","${log.maskedRut}","${log.fingerprint}","${log.candidateName}","${log.status}","${log.detail}"\n`;
     });
     this.downloadFile('bitacora_auditoria_miss17.csv', 'text/csv', csv);
-    this.showToast('📥 Bitácora de auditoría descargada.');
+    this.showToast('Bitácora de auditoría descargada (CSV).');
   }
 
   clearAuditLogs() {

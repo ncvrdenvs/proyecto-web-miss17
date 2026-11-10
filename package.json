@@ -4,7 +4,7 @@
   "description": "Sistema Oficial de Votación Segura y Ranking en Tiempo Real - Miss 17 Chimbarongo",
   "private": true,
   "scripts": {
-    "dev": "node server.js"
+    "dev": "node dev-server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

@@ -14,6 +14,8 @@ import {
   saveManualSupabaseConfig,
   fetchCandidatesFromDb,
   updateCandidateInDb,
+  insertCandidateInDb,
+  deleteCandidateFromDb,
   uploadCandidatePhotoToStorage,
   subscribeToCandidatesRealtime
 } from './supabase-client.js';
@@ -660,6 +662,15 @@ class Miss17AdminSuite {
       };
       this.candidates.push(newCand);
       this.showToast(`✨ ¡Nueva participante "${name}" registrada exitosamente!`);
+
+      // Guardar nueva participante en Supabase si está conectado
+      if (this.supabaseConnected) {
+        insertCandidateInDb(newCand).then((res) => {
+          if (res && res.ok) {
+            this.showToast(`☁️ "${name}" guardada en la base de datos Supabase.`);
+          }
+        });
+      }
     }
 
     this.saveState();
@@ -682,6 +693,15 @@ class Miss17AdminSuite {
     this.saveState();
     this.renderAll();
     this.showToast(`Participante "${target.name}" eliminada.`);
+
+    // Eliminar de Supabase si está conectado
+    if (this.supabaseConnected) {
+      deleteCandidateFromDb(candId).then((res) => {
+        if (res && res.ok) {
+          this.showToast(`☁️ "${target.name}" eliminada de Supabase.`);
+        }
+      });
+    }
   }
 
   resetDefaultCandidates() {

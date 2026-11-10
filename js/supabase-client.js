@@ -176,6 +176,61 @@ export async function updateCandidateInDb(cand) {
 }
 
 /**
+ * Inserta una nueva participante en la base de datos (con 0 votos iniciales).
+ */
+export async function insertCandidateInDb(cand) {
+  const supabase = await getSupabase();
+  if (!supabase) return { ok: false, offline: true };
+
+  try {
+    const { data, error } = await supabase
+      .from('candidates')
+      .insert({
+        id: cand.id,
+        number: cand.number,
+        name: cand.name,
+        age: cand.age,
+        sector: cand.sector,
+        school: cand.school,
+        quote: cand.quote,
+        hobbies: cand.hobbies,
+        votes: 0,
+        trend_delta: '+0.0%',
+        avatar: cand.avatar,
+        fallback_avatar: cand.fallbackAvatar || null
+      })
+      .select();
+
+    if (error) throw error;
+    return { ok: true, data };
+  } catch (err) {
+    console.error('[Supabase] Error al insertar participante:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+/**
+ * Elimina una participante de la base de datos.
+ */
+export async function deleteCandidateFromDb(candId) {
+  const supabase = await getSupabase();
+  if (!supabase) return { ok: false, offline: true };
+
+  try {
+    const { error } = await supabase
+      .from('candidates')
+      .delete()
+      .eq('id', candId);
+
+    if (error) throw error;
+    return { ok: true };
+  } catch (err) {
+    console.error('[Supabase] Error al eliminar participante:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+/**
  * Sube una fotografía al Bucket 'candidate-photos' de Supabase Storage y retorna la URL pública.
  */
 export async function uploadCandidatePhotoToStorage(fileOrBlob, candidateId) {

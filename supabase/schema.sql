@@ -223,11 +223,11 @@ CREATE POLICY "Permitir lectura publica de candidatas"
   ON public.candidates FOR SELECT
   USING (true);
 
--- Edición permitida para administradores autenticados o backend
+-- Edición permitida para el panel de administración
 DROP POLICY IF EXISTS "Permitir modificacion de candidatas para admin" ON public.candidates;
 CREATE POLICY "Permitir modificacion de candidatas para admin"
   ON public.candidates FOR ALL
-  TO authenticated, service_role
+  TO public
   USING (true)
   WITH CHECK (true);
 
@@ -300,6 +300,6 @@ CREATE POLICY "Permitir subida de fotos"
 DROP POLICY IF EXISTS "Permitir actualizacion y borrado de fotos" ON storage.objects;
 CREATE POLICY "Permitir actualizacion y borrado de fotos"
   ON storage.objects FOR ALL
-  TO authenticated, service_role
+  TO public, authenticated, service_role
   USING (bucket_id = 'candidate-photos');
 

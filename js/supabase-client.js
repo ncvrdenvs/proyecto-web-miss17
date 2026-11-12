@@ -168,6 +168,10 @@ export async function updateCandidateInDb(cand) {
       .select();
 
     if (error) throw error;
+    if (!data || data.length === 0) {
+      console.warn('[Supabase] La actualización no modificó filas. Revisa la política RLS en public.candidates.');
+      return { ok: false, error: 'Permiso denegado por políticas RLS en Supabase (0 filas modificadas).' };
+    }
     return { ok: true, data };
   } catch (err) {
     console.error('[Supabase] Error al actualizar participante:', err);
@@ -202,6 +206,10 @@ export async function insertCandidateInDb(cand) {
       .select();
 
     if (error) throw error;
+    if (!data || data.length === 0) {
+      console.warn('[Supabase] La actualización no modificó filas. Revisa la política RLS en public.candidates.');
+      return { ok: false, error: 'Permiso denegado por políticas RLS en Supabase (0 filas modificadas).' };
+    }
     return { ok: true, data };
   } catch (err) {
     console.error('[Supabase] Error al insertar participante:', err);

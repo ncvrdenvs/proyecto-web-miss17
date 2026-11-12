@@ -638,6 +638,8 @@ class Miss17AdminSuite {
           updateCandidateInDb(this.candidates[idx]).then((res) => {
             if (res && res.ok) {
               this.showToast(`☁️ Cambios de "${name}" guardados en Supabase.`);
+            } else {
+              this.showToast(`⚠️ No se pudo guardar en Supabase: ${res?.error || 'Permiso denegado'}`);
             }
           });
         }
@@ -920,6 +922,9 @@ class Miss17AdminSuite {
             this.tempUploadedPhotoUrl = uploadRes.publicUrl;
             if (urlInput) urlInput.value = uploadRes.publicUrl;
             this.showToast('✅ ¡Fotografía guardada en Storage CDN!');
+          } else {
+            console.warn('Storage upload falló:', uploadRes?.error);
+            this.showToast('⚠️ No se pudo subir a Supabase Storage: ' + (uploadRes?.error || 'Bucket no encontrado'));
           }
         }
       } catch {

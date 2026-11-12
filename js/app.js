@@ -60,11 +60,11 @@ class Miss17VotingApp {
   constructor() {
     this.candidates = this.loadFromStorage(STORAGE_KEYS.CANDIDATES, INITIAL_CANDIDATES);
     this.displayOrderIds = this.shuffleIds(this.candidates.map((c) => c.id));
-    this.votedRuts = new Set(this.loadFromStorage(STORAGE_KEYS.VOTED_RUTS, ['18482910K', '199102344', '202057817']));
+    this.votedRuts = new Set(this.loadFromStorage(STORAGE_KEYS.VOTED_RUTS, []));
     this.votedEmails = new Set(this.loadFromStorage(STORAGE_KEYS.VOTED_EMAILS, []));
     this.votedDevices = new Set(this.loadFromStorage(STORAGE_KEYS.VOTED_DEVICES, []));
     this.auditLogs = this.loadFromStorage(STORAGE_KEYS.AUDIT_LOGS, INITIAL_AUDIT_LOGS);
-    this.blockedCount = Number(localStorage.getItem(STORAGE_KEYS.BLOCKED_COUNT) || 47);
+    this.blockedCount = Number(localStorage.getItem(STORAGE_KEYS.BLOCKED_COUNT) || 0);
 
     this.deviceFingerprint = 'FP-INIT...';
     this.botTelemetry = new BotShieldTelemetry();
@@ -266,7 +266,7 @@ class Miss17VotingApp {
       const raw = localStorage.getItem(key);
       const parsed = raw ? JSON.parse(raw) : null;
       if (Array.isArray(fallback)) {
-        if (Array.isArray(parsed) && parsed.length >= 3) return parsed;
+        if (Array.isArray(parsed)) return parsed;
         return structuredClone(fallback);
       }
       return parsed !== null ? parsed : structuredClone(fallback);
@@ -390,6 +390,21 @@ class Miss17VotingApp {
       { cand: top3, rank: 3, label: 'TOP 3 · PODIO OFICIAL', phraseList: DYNAMIC_PODIUM_PHRASES.top3 }
     ].filter((item) => Boolean(item.cand));
 
+    if (podiumOrder.length === 0) {
+      podiumContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: rgba(255,255,255,0.02); border: 1.5px dashed rgba(200,155,221,0.25); border-radius: 24px;">
+          <p style="font-family: var(--font-principal); font-weight: 700; color: var(--rosa-muy-claro); font-size: 1.15rem; margin-bottom: 6px;">
+            AÚN NO HAY CANDIDATAS EN EL PODIO
+          </p>
+          <p style="font-size: 0.85rem; color: var(--lila);">
+            El ranking se activará en vivo automáticamente una vez registradas las participantes.
+          </p>
+        </div>
+      `;
+      runnersContainer.innerHTML = '<span style="color:var(--lila);font-size:0.85rem;padding:12px;">Esperando registro de participantes...</span>';
+      return;
+    }
+
     podiumContainer.innerHTML = podiumOrder
       .map(({ cand, rank, label, phraseList }) => {
         const sharePct = ((cand.votes / totalVotes) * 100).toFixed(1);
@@ -487,9 +502,12 @@ class Miss17VotingApp {
 
     if (orderedCandidates.length === 0) {
       grid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align:center; padding: 48px; background: var(--blanco); border-radius: 24px; border: 1.5px solid var(--lila);">
-          <p style="font-family:var(--font-principal);font-weight:800;color:var(--violeta-17);text-transform:uppercase;">
-            No se encontraron candidatas con ese criterio de búsqueda.
+        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: rgba(255,255,255,0.02); border: 1.5px dashed rgba(200,155,221,0.25); border-radius: 24px;">
+          <p style="font-family: var(--font-principal); font-weight: 800; color: var(--rosa-muy-claro); text-transform: uppercase; font-size: 1.1rem; margin-bottom: 6px;">
+            ${this.searchQuery ? 'No se encontraron candidatas con ese criterio' : 'Aún no hay participantes registradas'}
+          </p>
+          <p style="font-size: 0.85rem; color: var(--lila);">
+            ${this.searchQuery ? 'Prueba con otro término de búsqueda.' : 'Las candidatas oficiales aparecerán aquí en cuanto sean registradas desde el panel de administración.'}
           </p>
         </div>
       `;
@@ -595,14 +613,6 @@ class Miss17VotingApp {
       });
     }
 
-    document.getElementById('btnFillDemoRut')?.addEventListener('click', () => {
-      const sampleRut = generateRandomValidRut();
-      if (rutInput) {
-        rutInput.value = sampleRut;
-        this.validateRutFieldLive(sampleRut);
-      }
-    });
-
     document.getElementById('voterEmailInput')?.addEventListener('input', (e) => {
       this.validateEmailFieldLive(e.target.value);
     });
@@ -612,13 +622,6 @@ class Miss17VotingApp {
       this.handleStep1Submit();
     });
 
-    document.getElementById('btnAutoFillOtp')?.addEventListener('click', () => {
-      if (this.activeOtpSession && this.activeOtpSession.demoOtp) {
-        const otpInput = document.getElementById('otpCodeInput');
-        if (otpInput) otpInput.value = this.activeOtpSession.demoOtp;
-      }
-    });
-
     document.getElementById('btnBackToStep1')?.addEventListener('click', () => {
       this.setModalStep(1);
     });
@@ -626,14 +629,6 @@ class Miss17VotingApp {
     document.getElementById('voteStep2Form')?.addEventListener('submit', (e) => {
       e.preventDefault();
       this.handleStep2Submit();
-    });
-
-    document.getElementById('btnSimulateLiveVotes')?.addEventListener('click', () => {
-      this.toggleLiveSimulation();
-    });
-
-    document.getElementById('btnSingleSimVote')?.addEventListener('click', () => {
-      this.simulateSingleVerifiedVote();
     });
 
     document.querySelectorAll('.cmd-tab-btn').forEach((btn) => {
@@ -929,15 +924,6 @@ class Miss17VotingApp {
     }
 
     document.getElementById('otpTargetEmailDisplay').textContent = emailCheck.email;
-    const demoBanner = document.getElementById('demoOtpBanner');
-    const demoCodeEl = document.getElementById('demoOtpCodeValue');
-    if (this.activeOtpSession.demoOtp && demoBanner && demoCodeEl) {
-      demoBanner.style.display = 'flex';
-      demoCodeEl.textContent = this.activeOtpSession.demoOtp;
-    } else if (demoBanner) {
-      demoBanner.style.display = 'none';
-    }
-
     document.getElementById('otpCodeInput').value = '';
     this.startOtpCountdown(this.activeOtpSession.expiresAt);
     this.setModalStep(2);

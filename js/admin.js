@@ -55,7 +55,7 @@ class Miss17AdminSuite {
   constructor() {
     this.candidates = this.loadFromStorage(STORAGE_KEYS.CANDIDATES, INITIAL_CANDIDATES);
     this.auditLogs = this.loadFromStorage(STORAGE_KEYS.AUDIT_LOGS, INITIAL_AUDIT_LOGS);
-    this.blockedCount = Number(localStorage.getItem(STORAGE_KEYS.BLOCKED_COUNT) || 47);
+    this.blockedCount = Number(localStorage.getItem(STORAGE_KEYS.BLOCKED_COUNT) || 0);
 
     // PIN de administración (por defecto 2026 o el guardado por el usuario)
     this.adminPin = localStorage.getItem('m17_admin_custom_pin') || '2026';
@@ -74,7 +74,7 @@ class Miss17AdminSuite {
     try {
       const raw = localStorage.getItem(key);
       const parsed = raw ? JSON.parse(raw) : null;
-      return parsed && Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback;
+      return parsed && Array.isArray(parsed) ? parsed : fallback;
     } catch {
       return fallback;
     }
@@ -339,13 +339,26 @@ class Miss17AdminSuite {
 
     if (list.length === 0) {
       grid.innerHTML = `
-        <div style="grid-column: 1 / -1; padding: 48px 20px; text-align: center; color: var(--lila);">
-          <div style="margin-bottom: 12px; opacity: 0.65;">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--rosa-pop)" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <div style="grid-column: 1 / -1; padding: 64px 20px; text-align: center; color: var(--lila); background: rgba(255,255,255,0.02); border: 1.5px dashed rgba(200,155,221,0.2); border-radius: 20px;">
+          <div style="margin-bottom: 14px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--rosa-pop)" stroke-width="1.8"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/><line x1="12" y1="13" x2="12" y2="17"/><line x1="10" y1="15" x2="14" y2="15"/></svg>
           </div>
-          <p style="font-weight: 700;">No se encontraron participantes con el término "${this.searchQuery}".</p>
+          <p style="font-weight: 700; font-size: 1.1rem; color: var(--blanco); margin-bottom: 6px;">
+            ${this.searchQuery ? `No se encontraron participantes con "${this.searchQuery}"` : 'No hay participantes registradas aún'}
+          </p>
+          <p style="font-size: 0.85rem; color: var(--lila); margin-bottom: 20px;">
+            ${this.searchQuery ? 'Prueba con otro término de búsqueda.' : 'Comienza registrando la primera candidata para la plataforma.'}
+          </p>
+          ${!this.searchQuery ? `
+            <button type="button" class="btn-magnetic-fucsia" id="btnEmptyGridAddCand" style="padding:10px 24px;margin:0 auto;">
+              <span>➕ Registrar Primera Participante</span>
+            </button>
+          ` : ''}
         </div>
       `;
+      document.getElementById('btnEmptyGridAddCand')?.addEventListener('click', () => {
+        this.openCandidateEditor(null);
+      });
       return;
     }
 
@@ -425,6 +438,17 @@ class Miss17AdminSuite {
     if (!tbody) return;
 
     const list = this.getSortedRanking();
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="text-align:center;padding:48px 20px;color:var(--lila);">
+            No hay participantes registradas en el sistema.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
     const total = Math.max(this.getTotalVotes(), 1);
 
     tbody.innerHTML = list
@@ -469,6 +493,17 @@ class Miss17AdminSuite {
     if (!tbody) return;
 
     const sorted = this.getSortedRanking();
+    if (sorted.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center;padding:48px 20px;color:var(--lila);">
+            Sin datos de votación disponibles aún.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
     const total = Math.max(this.getTotalVotes(), 1);
     const leaderVotes = sorted[0] ? sorted[0].votes : 0;
 
@@ -506,6 +541,17 @@ class Miss17AdminSuite {
   renderAuditTable() {
     const tbody = document.getElementById('adminAuditTableBody');
     if (!tbody) return;
+
+    if (this.auditLogs.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center;padding:48px 20px;color:var(--lila);">
+            Sin registros de auditoría aún. El registro de votos se mostrará aquí cuando comiencen las votaciones.
+          </td>
+        </tr>
+      `;
+      return;
+    }
 
     tbody.innerHTML = this.auditLogs
       .map(

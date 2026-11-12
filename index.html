@@ -173,22 +173,6 @@
         </p>
       </div>
 
-      <!-- Barra de Control de Transmisión en Vivo -->
-      <div class="broadcast-control-bar">
-        <div class="broadcast-status">
-          <span class="live-beacon"></span>
-          <span id="lastVoteTimestampText">Votación en vivo · Resultados actualizados al instante</span>
-        </div>
-        <div class="broadcast-actions">
-          <button type="button" id="btnSimulateLiveVotes" class="btn-broadcast-pill" title="Simular votos para ver el ranking en movimiento">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>Ver Movimiento en Vivo: OFF</span>
-          </button>
-          <button type="button" id="btnSingleSimVote" class="btn-broadcast-pill">
-            <span>+1 Voto de Prueba</span>
-          </button>
-        </div>
-      </div>
 
       <!-- Escenario de 3 Monolitos Holográficos: TOP 2, TOP 1 (Centro), TOP 3 -->
       <div class="podium-monoliths-grid" id="podiumContainer">
@@ -393,9 +377,6 @@
           <div class="field-group">
             <div class="field-label-row">
               <label class="field-label" for="voterRutInput">Tu RUT (1 voto por persona) *</label>
-              <button type="button" id="btnFillDemoRut" class="btn-link-neon">
-                Probar con RUT de ejemplo
-              </button>
             </div>
             <input type="text" id="voterRutInput" class="modern-input" placeholder="Ej: 19.876.543-2" maxlength="12" autocomplete="off" required />
             <span id="rutFeedbackHint" class="field-hint">Ingresa tu RUT chileno (se formatea automáticamente).</span>
@@ -421,17 +402,6 @@
             Ingresa el código de 6 números para confirmar tu voto enviado a <strong id="otpTargetEmailDisplay" style="color:var(--rosa-pop);"></strong>:
           </p>
 
-          <div class="demo-otp-banner" id="demoOtpBanner">
-            <div>
-              <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--rosa-pop);font-weight:800;display:block;">
-                TU CÓDIGO DE CONFIRMACIÓN
-              </span>
-              <div class="demo-otp-code" id="demoOtpCodeValue">------</div>
-            </div>
-            <button type="button" id="btnAutoFillOtp" class="btn-glass-secondary" style="padding:8px 14px;font-size:0.74rem;">
-              Autocompletar Código
-            </button>
-          </div>
 
           <div class="field-group">
             <input type="text" id="otpCodeInput" class="otp-digit-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required />

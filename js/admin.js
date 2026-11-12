@@ -612,9 +612,6 @@ class Miss17AdminSuite {
       }
       if (numBadge) numBadge.textContent = `#0${cand.number}`;
       if (quoteCounter) quoteCounter.textContent = `${(cand.quote || '').length}/220`;
-
-      const urlInput = document.getElementById('editCandPhotoUrlInput');
-      if (urlInput) urlInput.value = cand.avatar.startsWith('http') ? cand.avatar : '';
     } else {
       if (titleEl) titleEl.textContent = '➕ Registrar Nueva Participante';
       document.getElementById('editCandId').value = '';
@@ -624,8 +621,6 @@ class Miss17AdminSuite {
       if (previewImg) previewImg.src = initialFallback;
       if (numBadge) numBadge.textContent = `#0${nextNum}`;
       if (quoteCounter) quoteCounter.textContent = '0/220';
-      const urlInput = document.getElementById('editCandPhotoUrlInput');
-      if (urlInput) urlInput.value = '';
 
       const votesDisplay = document.getElementById('editCandVotesDisplay');
       if (votesDisplay) votesDisplay.textContent = '0 votos';
@@ -955,8 +950,6 @@ class Miss17AdminSuite {
         this.tempUploadedPhotoUrl = optimizedDataUrl;
         const previewImg = document.getElementById('editCandPhotoPreview');
         if (previewImg) previewImg.src = optimizedDataUrl;
-        const urlInput = document.getElementById('editCandPhotoUrlInput');
-        if (urlInput) urlInput.value = '';
         this.showToast('✅ Fotografía cargada en vista previa.');
 
         // Si Supabase está conectado, subir al bucket candidate-photos
@@ -966,7 +959,6 @@ class Miss17AdminSuite {
           const uploadRes = await uploadCandidatePhotoToStorage(file, candId);
           if (uploadRes && uploadRes.ok && uploadRes.publicUrl) {
             this.tempUploadedPhotoUrl = uploadRes.publicUrl;
-            if (urlInput) urlInput.value = uploadRes.publicUrl;
             this.showToast('✅ ¡Fotografía guardada en Storage CDN!');
           } else {
             console.warn('Storage upload falló:', uploadRes?.error);
@@ -976,31 +968,6 @@ class Miss17AdminSuite {
       } catch {
         this.showToast('Error al procesar la fotografía. Intenta con otra imagen.');
       }
-    });
-
-    // URL de imagen
-    document.getElementById('editCandPhotoUrlInput')?.addEventListener('input', (e) => {
-      const url = e.target.value.trim();
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        this.tempUploadedPhotoUrl = url;
-        const previewImg = document.getElementById('editCandPhotoPreview');
-        if (previewImg) previewImg.src = url;
-      }
-    });
-
-    // Monograma editorial
-    document.getElementById('btnUseDefaultPortrait')?.addEventListener('click', () => {
-      const name = document.getElementById('editCandNameInput')?.value.trim() || 'Participante';
-      const num = this.editingCandidateId
-        ? this.candidates.find((c) => c.id === this.editingCandidateId)?.number || 1
-        : this.candidates.length + 1;
-      const svgUrl = createEditorialPortrait(name, num);
-      this.tempUploadedPhotoUrl = svgUrl;
-      const previewImg = document.getElementById('editCandPhotoPreview');
-      if (previewImg) previewImg.src = svgUrl;
-      const urlInput = document.getElementById('editCandPhotoUrlInput');
-      if (urlInput) urlInput.value = '';
-      this.showToast('Monograma editorial asignado a la vista previa.');
     });
 
     // Contador de frase

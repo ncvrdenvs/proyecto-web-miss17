@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS public.votes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   rut_hash TEXT NOT NULL UNIQUE, -- HASH SHA-256 del RUT chileno. Garantiza 1 solo voto por persona.
   masked_rut TEXT NOT NULL,      -- Formato protegido: **.***.123-K
-  email_hash TEXT NOT NULL,      -- HASH SHA-256 del correo electrónico
+  email_hash TEXT NOT NULL UNIQUE, -- HASH SHA-256 del correo electrónico. Garantiza 1 solo voto por correo.
   candidate_id TEXT NOT NULL REFERENCES public.candidates(id) ON DELETE RESTRICT,
   fingerprint TEXT,              -- Huella digital del dispositivo
   receipt_id TEXT NOT NULL UNIQUE, -- Código de comprobante: M17-XXXXX
@@ -76,6 +76,39 @@ VALUES
   ('cand-07', 7, 'Javiera Espinoza Riquelme', 17, 'San José de Toro', 'Colegio San José de la Montaña', 'Mi compromiso es visibilizar el bienestar emocional juvenil y el deporte inclusivo en todos los colegios.', 'Básquetbol · Podcasting · Voluntariado', 118, '+1.0%', '/images/cand_7.jpg'),
   ('cand-08', 8, 'Emilia Fuentes Donoso', 16, 'Santa Isabel', 'Colegio Chimbarongo', 'Con determinación y orgullo por nuestras raíces, la nueva generación de Chimbarongo brilla con luz propia.', 'Danza folclórica · Guitarra · Rescate patrimonial', 112, '+0.9%', '/images/cand_8.jpg')
 ON CONFLICT (id) DO NOTHING;
+
+-- 5.1 FUNCIÓN SEGURA DE VERIFICACIÓN PREVIA (ANTI-REUTILIZACIÓN DE RUT Y CORREO)
+-- Permite consultar si un RUT o correo ya votó sin exponer filas ni hashes de la tabla votes.
+CREATE OR REPLACE FUNCTION public.check_vote_eligibility(
+  p_clean_rut TEXT DEFAULT NULL,
+  p_email TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_rut_hash TEXT;
+  v_email_hash TEXT;
+  v_rut_voted BOOLEAN := false;
+  v_email_voted BOOLEAN := false;
+BEGIN
+  IF p_clean_rut IS NOT NULL AND length(trim(p_clean_rut)) > 0 THEN
+    v_rut_hash := encode(digest(upper(trim(p_clean_rut)), 'sha256'), 'hex');
+    SELECT EXISTS (SELECT 1 FROM public.votes WHERE rut_hash = v_rut_hash) INTO v_rut_voted;
+  END IF;
+
+  IF p_email IS NOT NULL AND length(trim(p_email)) > 0 THEN
+    v_email_hash := encode(digest(lower(trim(p_email)), 'sha256'), 'hex');
+    SELECT EXISTS (SELECT 1 FROM public.votes WHERE email_hash = v_email_hash) INTO v_email_voted;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'rutVoted', v_rut_voted,
+    'emailVoted', v_email_voted
+  );
+END;
+$$;
 
 -- 6. FUNCIÓN ATÓMICA DE EMISIÓN DE VOTO (ACID TRANSACTION)
 -- Ejecuta la verificación de duplicados, inserción y suma del voto en una sola transacción segura.
@@ -134,6 +167,26 @@ BEGIN
       'ok', false,
       'code', 'ALREADY_VOTED',
       'error', 'Este RUT ya emitió su voto en Miss 17 Chimbarongo. Solo se permite un voto por persona.'
+    );
+  END IF;
+
+  -- 3.1 Verificar si el correo electrónico ya fue utilizado previamente
+  IF EXISTS (SELECT 1 FROM public.votes WHERE email_hash = v_email_hash) THEN
+    INSERT INTO public.audit_logs (id, masked_rut, email_masked, fingerprint, candidate_name, status, detail)
+    VALUES (
+      'REG-' || substring(md5(random()::text), 1, 6),
+      p_masked_rut,
+      v_email_masked,
+      p_fingerprint,
+      'Correo duplicado',
+      'BLOCKED',
+      'Intento no permitido: Este correo electrónico ya fue utilizado para emitir un voto.'
+    );
+
+    RETURN jsonb_build_object(
+      'ok', false,
+      'code', 'EMAIL_ALREADY_VOTED',
+      'error', 'Este correo electrónico ya fue utilizado para emitir un voto. Solo se permite un voto por correo.'
     );
   END IF;
 
@@ -196,11 +249,11 @@ BEGIN
   );
 
 EXCEPTION WHEN unique_violation THEN
-  -- En caso de dos solicitudes en el mismo milisegundo con el mismo RUT
+  -- En caso de dos solicitudes en el mismo milisegundo con el mismo RUT o correo
   RETURN jsonb_build_object(
     'ok', false,
     'code', 'DUPLICATE_VOTE_CONCURRENT',
-    'error', 'El voto para este RUT ya fue procesado.'
+    'error', 'El voto para este RUT o correo electrónico ya fue procesado.'
   );
 WHEN OTHERS THEN
   RETURN jsonb_build_object(

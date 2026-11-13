@@ -3,7 +3,7 @@
 // En producción en Vercel, si existe process.env.RESEND_API_KEY, envía el correo real automáticamente.
 
 const crypto = require('crypto');
-const { checkRutAlreadyVoted } = require('./supabase-helper');
+const { checkRutAlreadyVoted, checkEmailAlreadyVoted } = require('./supabase-helper');
 
 const DISPOSABLE_DOMAINS = new Set([
   'yopmail.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com',
@@ -49,6 +49,77 @@ function signOtpToken(rut, email, candidateId, otpCode, expiresAt) {
   const secret = process.env.OTP_SECRET || 'miss17-chimbarongo-2026-ultra-secret-key';
   const payload = `${cleanRut(rut)}|${email.toLowerCase().trim()}|${candidateId}|${otpCode}|${expiresAt}`;
   return crypto.createHmac('sha256', secret).update(payload).digest('hex');
+}
+
+function buildOtpEmailHtml(otpCode, candidateName) {
+  return `
+    <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #FBEAF5; padding: 32px; border-radius: 20px; color: #32114F;">
+      <h2 style="color: #5B2B88; text-transform: uppercase; margin-top: 0;">Miss 17 Chimbarongo</h2>
+      <p>Estás a un paso de confirmar tu voto oficial para <strong>${candidateName || 'tu candidata favorita'}</strong>.</p>
+      <div style="background: #FFFFFF; border: 2px solid #D50078; border-radius: 14px; padding: 20px; text-align: center; margin: 24px 0;">
+        <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #5B2B88; display: block; margin-bottom: 6px;">Tu Código de Confirmación</span>
+        <strong style="font-size: 34px; letter-spacing: 8px; color: #D50078;">${otpCode}</strong>
+      </div>
+      <p style="font-size: 13px; color: #5B2B88;">Este código expira en 3 minutos y garantiza que cada voto sea 100% real y único.</p>
+    </div>
+  `;
+}
+
+async function sendViaBrevo({ to, subject, html }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL;
+  if (!apiKey || !senderEmail) return false;
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: {
+        name: process.env.BREVO_SENDER_NAME || 'Miss 17 Chimbarongo',
+        email: senderEmail
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html
+    })
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    console.error('[Brevo Error]', res.status, errText);
+    return false;
+  }
+  return true;
+}
+
+async function sendViaResend({ to, subject, html }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return false;
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM_EMAIL || 'Miss 17 Chimbarongo <onboarding@resend.dev>',
+      to: [to],
+      subject,
+      html
+    })
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    console.error('[Resend Error]', res.status, errText);
+    return false;
+  }
+  return true;
 }
 
 module.exports = async function handler(req, res) {
@@ -133,6 +204,16 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // 4.1 Verificación en Supabase: comprobar si este correo ya fue usado para votar
+    const emailAlreadyVotedInDb = await checkEmailAlreadyVoted(normalizedEmail);
+    if (emailAlreadyVotedInDb) {
+      return res.status(400).json({
+        ok: false,
+        code: 'EMAIL_ALREADY_VOTED',
+        error: 'Este correo electrónico ya fue utilizado para emitir un voto en Miss 17 Chimbarongo. Solo se permite un voto por correo.'
+      });
+    }
+
     if (!fingerprint || String(fingerprint).length < 8) {
       return res.status(400).json({
         ok: false,
@@ -146,38 +227,30 @@ module.exports = async function handler(req, res) {
     const expiresAt = Date.now() + 3 * 60 * 1000; // 3 minutos
     const signature = signOtpToken(rut, normalizedEmail, candidateId, otpCode, expiresAt);
 
-    let emailSentLive = false;
+    console.log(`\n======================================================`);
+    console.log(`📧 [CÓDIGO DE VOTACIÓN] Para: ${normalizedEmail}`);
+    console.log(`🔑 CÓDIGO OTP DE 6 DÍGITOS: ${otpCode}`);
+    console.log(`======================================================\n`);
 
-    // Si en Vercel está configurada RESEND_API_KEY, enviamos el correo real
-    if (process.env.RESEND_API_KEY) {
-      try {
-        const resendRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: process.env.RESEND_FROM_EMAIL || 'Miss 17 Chimbarongo <votaciones@miss17chimbarongo.cl>',
-            to: [normalizedEmail],
-            subject: `Código de verificación ${otpCode} - Votación Miss 17 Chimbarongo`,
-            html: `
-              <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #FBEAF5; padding: 32px; border-radius: 20px; color: #32114F;">
-                <h2 style="color: #5B2B88; text-transform: uppercase; margin-top: 0;">Miss 17 Chimbarongo</h2>
-                <p>Estás a un paso de confirmar tu voto oficial para <strong>${candidateName || 'tu candidata favorita'}</strong>.</p>
-                <div style="background: #FFFFFF; border: 2px solid #D50078; border-radius: 14px; padding: 20px; text-align: center; margin: 24px 0;">
-                  <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #5B2B88; display: block; margin-bottom: 6px;">Tu Código de Confirmación</span>
-                  <strong style="font-size: 34px; letter-spacing: 8px; color: #D50078;">${otpCode}</strong>
-                </div>
-                <p style="font-size: 13px; color: #5B2B88;">Este código expira en 3 minutos y garantiza que cada voto sea 100% real y único.</p>
-              </div>
-            `
-          })
-        });
-        emailSentLive = resendRes.ok;
-      } catch (e) {
-        emailSentLive = false;
+    let emailSentLive = false;
+    const emailPayload = {
+      to: normalizedEmail,
+      subject: `Código de verificación ${otpCode} - Votación Miss 17 Chimbarongo`,
+      html: buildOtpEmailHtml(otpCode, candidateName)
+    };
+
+    try {
+      // Prioridad 1: Brevo (permite enviar a cualquier votante gratis solo verificando tu Gmail)
+      if (process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL) {
+        emailSentLive = await sendViaBrevo(emailPayload);
       }
+      // Prioridad 2: Resend (ideal con dominio propio verificado o para pruebas al propio correo)
+      if (!emailSentLive && process.env.RESEND_API_KEY) {
+        emailSentLive = await sendViaResend(emailPayload);
+      }
+    } catch (e) {
+      console.error('[Email Dispatch Error]', e);
+      emailSentLive = false;
     }
 
     return res.status(200).json({
@@ -185,7 +258,7 @@ module.exports = async function handler(req, res) {
       expiresAt,
       signature,
       emailSentLive,
-      // En modo diseño/pruebas (cuando aún no se configura RESEND_API_KEY en Vercel), devolvemos demoOtp para pruebas inmediatas
+      // En modo diseño/pruebas (cuando aún no se configura proveedor de correo), devolvemos demoOtp para pruebas inmediatas
       demoOtp: emailSentLive ? undefined : otpCode,
       message: emailSentLive
         ? `Código enviado a ${normalizedEmail}`

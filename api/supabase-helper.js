@@ -17,16 +17,37 @@ function computeSha256(str) {
   return crypto.createHash('sha256').update(String(str || '')).digest('hex');
 }
 
-/**
- * Consulta a Supabase si un RUT ya tiene un voto registrado en la base de datos.
- */
-async function checkRutAlreadyVoted(cleanRut) {
+async function checkVoteEligibilityRpc(payload) {
+  const { isConfigured, url, key } = getSupabaseConfig();
+  if (!isConfigured) return null;
+
+  try {
+    const endpoint = `${url}/rest/v1/rpc/check_vote_eligibility`;
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn('[Supabase] Error en check_vote_eligibility:', err.message);
+    return null;
+  }
+}
+
+async function checkVoteHashExists(column, rawValue) {
   const { isConfigured, url, key } = getSupabaseConfig();
   if (!isConfigured) return false;
 
   try {
-    const rutHash = computeSha256(cleanRut.toUpperCase().trim());
-    const endpoint = `${url}/rest/v1/votes?rut_hash=eq.${rutHash}&select=id`;
+    const hash = computeSha256(rawValue);
+    const endpoint = `${url}/rest/v1/votes?${column}=eq.${hash}&select=id`;
 
     const res = await fetch(endpoint, {
       method: 'GET',
@@ -41,9 +62,33 @@ async function checkRutAlreadyVoted(cleanRut) {
     const data = await res.json();
     return Array.isArray(data) && data.length > 0;
   } catch (err) {
-    console.warn('[Supabase] Error al consultar voto previo:', err.message);
+    console.warn(`[Supabase] Error al consultar ${column}:`, err.message);
     return false;
   }
+}
+
+/**
+ * Consulta a Supabase si un RUT ya tiene un voto registrado en la base de datos.
+ */
+async function checkRutAlreadyVoted(cleanRut) {
+  const normalizedRut = String(cleanRut || '').toUpperCase().trim();
+  const rpcResult = await checkVoteEligibilityRpc({ p_clean_rut: normalizedRut, p_email: null });
+  if (rpcResult && typeof rpcResult.rutVoted === 'boolean') {
+    return rpcResult.rutVoted;
+  }
+  return checkVoteHashExists('rut_hash', normalizedRut);
+}
+
+/**
+ * Consulta a Supabase si un correo electrónico ya fue utilizado para emitir un voto.
+ */
+async function checkEmailAlreadyVoted(email) {
+  const normalizedEmail = String(email || '').toLowerCase().trim();
+  const rpcResult = await checkVoteEligibilityRpc({ p_clean_rut: null, p_email: normalizedEmail });
+  if (rpcResult && typeof rpcResult.emailVoted === 'boolean') {
+    return rpcResult.emailVoted;
+  }
+  return checkVoteHashExists('email_hash', normalizedEmail);
 }
 
 /**
@@ -105,6 +150,7 @@ module.exports = {
   getSupabaseConfig,
   computeSha256,
   checkRutAlreadyVoted,
+  checkEmailAlreadyVoted,
   recordVoteInSupabase
 };
 

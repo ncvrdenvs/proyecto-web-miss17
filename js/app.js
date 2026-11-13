@@ -604,6 +604,14 @@ class Miss17VotingApp {
       document.getElementById('ranking')?.scrollIntoView({ behavior: 'smooth' });
     });
 
+    document.getElementById('btnStartVotingForCand')?.addEventListener('click', () => {
+      this.showVotingFlowView();
+    });
+
+    document.getElementById('btnBackToProfileView')?.addEventListener('click', () => {
+      this.showProfileView();
+    });
+
     const rutInput = document.getElementById('voterRutInput');
     if (rutInput) {
       rutInput.addEventListener('input', (e) => {
@@ -680,7 +688,7 @@ class Miss17VotingApp {
   }
 
   // ==========================================================================
-  // MODAL DE VOTACIÓN SEGURA EN 3 PASOS
+  // MODAL DE VOTACIÓN SEGURA EN 3 PASOS Y FICHA EDITORIAL
   // ==========================================================================
   openVoteModal(candidateId) {
     const cand = this.candidates.find((c) => c.id === candidateId);
@@ -689,15 +697,52 @@ class Miss17VotingApp {
     this.selectedCandidate = cand;
     this.botTelemetry.reset();
 
+    const fallback = cand.fallbackAvatar || createEditorialPortrait(cand.name, cand.number);
+
+    // 1. Llenar Ficha Editorial Completa de la Participante
+    const photoEl = document.getElementById('profileCandPhoto');
+    if (photoEl) {
+      photoEl.src = cand.avatar;
+      photoEl.onerror = () => { photoEl.src = fallback; };
+    }
+    const badgeEl = document.getElementById('profileCandNumberBadge');
+    if (badgeEl) badgeEl.textContent = `#0${cand.number}`;
+
+    const profileNameEl = document.getElementById('profileCandName');
+    if (profileNameEl) profileNameEl.textContent = cand.name;
+
+    const sectorEl = document.getElementById('profileCandSector');
+    if (sectorEl) sectorEl.textContent = cand.sector || 'Chimbarongo';
+
+    const ageEl = document.getElementById('profileCandAge');
+    if (ageEl) ageEl.textContent = `${cand.age || 17} años`;
+
+    const schoolEl = document.getElementById('profileCandSchool');
+    if (schoolEl) schoolEl.textContent = cand.school || 'Chimbarongo';
+
+    const quoteEl = document.getElementById('profileCandQuote');
+    if (quoteEl) {
+      quoteEl.textContent = cand.quote ? `“${cand.quote}”` : '“Representando con orgullo la nueva generación de Chimbarongo.”';
+    }
+
+    const hobbiesEl = document.getElementById('profileCandHobbies');
+    if (hobbiesEl) {
+      hobbiesEl.textContent = cand.hobbies || 'Actividades comunitarias, culturales y liderazgo juvenil.';
+    }
+
+    const btnFirstEl = document.getElementById('profileBtnCandFirstName');
+    if (btnFirstEl) btnFirstEl.textContent = cand.name.split(' ')[0];
+
+    // 2. Chip superior del modal
     const avatarEl = document.getElementById('modalCandAvatar');
     if (avatarEl) {
       avatarEl.src = cand.avatar;
-      avatarEl.onerror = () => {
-        avatarEl.src = cand.fallbackAvatar || createEditorialPortrait(cand.name, cand.number);
-      };
+      avatarEl.onerror = () => { avatarEl.src = fallback; };
     }
-    document.getElementById('modalCandName').textContent = cand.name;
+    const candNameEl = document.getElementById('modalCandName');
+    if (candNameEl) candNameEl.textContent = cand.name;
 
+    // 3. Reiniciar formulario de votación
     document.getElementById('voteStep1Form')?.reset();
     document.getElementById('voterRutInput')?.classList.remove('valid', 'invalid');
     document.getElementById('voterEmailInput')?.classList.remove('valid', 'invalid');
@@ -706,14 +751,36 @@ class Miss17VotingApp {
 
     this.resetHumanShieldUI();
     this.hideModalAlert();
-    this.setModalStep(1);
+
+    // 4. Mostrar siempre primero la Ficha con toda la información
+    this.showProfileView();
 
     document.getElementById('voteModalBackdrop')?.classList.add('open');
+  }
+
+  showProfileView() {
+    const profileView = document.getElementById('modalCandidateProfileView');
+    const flowView = document.getElementById('modalVotingFlowView');
+    const subTitleEl = document.getElementById('modalTopSubtitle');
+    if (profileView) profileView.style.display = 'grid';
+    if (flowView) flowView.style.display = 'none';
+    if (subTitleEl) subTitleEl.textContent = 'FICHA DE PARTICIPANTE';
+  }
+
+  showVotingFlowView() {
+    const profileView = document.getElementById('modalCandidateProfileView');
+    const flowView = document.getElementById('modalVotingFlowView');
+    const subTitleEl = document.getElementById('modalTopSubtitle');
+    if (profileView) profileView.style.display = 'none';
+    if (flowView) flowView.style.display = 'block';
+    if (subTitleEl) subTitleEl.textContent = 'EMITIENDO VOTO OFICIAL';
+    this.setModalStep(1);
   }
 
   closeVoteModal() {
     document.getElementById('voteModalBackdrop')?.classList.remove('open');
     if (this.otpTimerInterval) clearInterval(this.otpTimerInterval);
+    this.showProfileView();
   }
 
   setModalStep(stepNumber) {
@@ -770,7 +837,7 @@ class Miss17VotingApp {
 
     input.classList.remove('invalid');
     input.classList.add('valid');
-    hint.textContent = '✓ RUT chileno válido (Módulo 11 verificado) y habilitado.';
+    hint.textContent = '✓ RUT chileno válido.';
     hint.className = 'field-hint success';
     return true;
   }
@@ -925,6 +992,14 @@ class Miss17VotingApp {
 
     document.getElementById('otpTargetEmailDisplay').textContent = emailCheck.email;
     document.getElementById('otpCodeInput').value = '';
+
+    if (this.activeOtpSession.demoOtp) {
+      console.log(`[Miss 17 Chimbarongo] Código de verificación: ${this.activeOtpSession.demoOtp}`);
+      this.showToast(`🔑 Código de prueba: ${this.activeOtpSession.demoOtp}`);
+    } else {
+      this.showToast(`📧 Código enviado a ${emailCheck.email} (revisa Recibidos o Spam).`);
+    }
+
     this.startOtpCountdown(this.activeOtpSession.expiresAt);
     this.setModalStep(2);
   }

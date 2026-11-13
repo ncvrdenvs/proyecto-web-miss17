@@ -7,6 +7,7 @@ import {
   DYNAMIC_PODIUM_PHRASES,
   INITIAL_AUDIT_LOGS,
   createEditorialPortrait,
+  computeCandidateRanking,
   STORAGE_KEYS
 } from './data.js';
 
@@ -301,8 +302,12 @@ class Miss17VotingApp {
     return this.candidates.reduce((sum, c) => sum + Number(c.votes || 0), 0);
   }
 
+  getRankingData() {
+    return computeCandidateRanking(this.candidates);
+  }
+
   getSortedRanking() {
-    return [...this.candidates].sort((a, b) => b.votes - a.votes);
+    return this.getRankingData().sortedAll;
   }
 
   // ==========================================================================
@@ -322,12 +327,19 @@ class Miss17VotingApp {
     const countEl = document.getElementById('adminCandCount');
     const heroTop1El = document.getElementById('heroTop1PreviewName');
 
-    const sorted = this.getSortedRanking();
+    const { votedOnly, tiedTopIds } = this.getRankingData();
+    const top1 = votedOnly[0];
 
     if (totalEl) totalEl.textContent = this.getTotalVotes().toLocaleString('es-CL');
     if (blockedEl) blockedEl.textContent = this.blockedCount.toLocaleString('es-CL');
     if (countEl) countEl.textContent = String(this.candidates.length);
-    if (heroTop1El && sorted[0]) heroTop1El.textContent = sorted[0].name;
+    if (heroTop1El) {
+      if (top1) {
+        heroTop1El.textContent = tiedTopIds.size > 1 ? `Empate: ${top1.name.split(' ')[0]} y más` : top1.name;
+      } else {
+        heroTop1El.textContent = 'Sin votos aún';
+      }
+    }
   }
 
   renderTicker() {
@@ -335,15 +347,32 @@ class Miss17VotingApp {
     const track2 = document.getElementById('liveTickerTrackSecondary');
     if (!track1 || !track2) return;
 
-    const sorted = this.getSortedRanking();
-    const total = Math.max(this.getTotalVotes(), 1);
-    const top1 = sorted[0];
-    const top2 = sorted[1];
-    const diffPct = top1 && top2 ? (((top1.votes - top2.votes) / total) * 100).toFixed(1) : '1.1';
+    const { votedOnly, tiedTopIds } = this.getRankingData();
+    const total = this.getTotalVotes();
+    const top1 = votedOnly[0];
+    const top2 = votedOnly[1];
+
+    let primaryTopHeadline = '🗳️ VOTACIONES ABIERTAS · AÚN SIN VOTOS REGISTRADOS';
+    let primaryDiffHeadline = '✨ EMITE EL PRIMER VOTO VERIFICADO PARA INAUGURAR EL PODIO';
+
+    if (top1 && total > 0) {
+      if (tiedTopIds.size > 1) {
+        primaryTopHeadline = `🤝 EMPATE EN EL TOP 1: ${tiedTopIds.size} CANDIDATAS CON ${top1.votes} VOTO${top1.votes === 1 ? '' : 'S'}`;
+        primaryDiffHeadline = `🔥 VOTACIÓN REÑIDA EN LA CIMA · CADA VOTO DEFINE EL PRIMER LUGAR`;
+      } else {
+        primaryTopHeadline = `👑 TOP 1 EN VIVO: ${top1.name} · LA MÁS VOTADA DEL MOMENTO`;
+        if (top2) {
+          const diffPct = (((top1.votes - top2.votes) / total) * 100).toFixed(1);
+          primaryDiffHeadline = `🔥 DIFERENCIA ENTRE EL TOP 1 Y TOP 2: SOLO ${diffPct}% DE PREFERENCIA`;
+        } else {
+          primaryDiffHeadline = `⭐ LIDERANDO CON EL 100% DE LOS VOTOS REGISTRADOS HASTA AHORA`;
+        }
+      }
+    }
 
     const primaryNodes = [
-      `👑 TOP 1 EN VIVO: ${top1 ? top1.name : 'EN DISPUTA'} · LA MÁS VOTADA DEL MOMENTO`,
-      `🔥 DIFERENCIA ENTRE EL TOP 1 Y TOP 2: SOLO ${diffPct}% DE PREFERENCIA`,
+      primaryTopHeadline,
+      primaryDiffHeadline,
       `✨ MISS 17 CHIMBARONGO · NUEVA GENERACIÓN 2026`,
       `🗳️ 1 PERSONA = 1 VOTO · RESULTADOS ACTUALIZADOS EN TIEMPO REAL`
     ];
@@ -377,44 +406,77 @@ class Miss17VotingApp {
     const runnersContainer = document.getElementById('runnersUpContainer');
     if (!podiumContainer || !runnersContainer) return;
 
-    const sorted = this.getSortedRanking();
-    const totalVotes = Math.max(this.getTotalVotes(), 1);
+    const { votedOnly, rankById, tiedTopIds } = this.getRankingData();
+    const totalVotes = this.getTotalVotes();
 
-    const top1 = sorted[0];
-    const top2 = sorted[1];
-    const top3 = sorted[2];
-
-    const podiumOrder = [
-      { cand: top2, rank: 2, label: 'TOP 2 · FAVORITA', phraseList: DYNAMIC_PODIUM_PHRASES.top2 },
-      { cand: top1, rank: 1, label: 'TOP 1 · LÍDER ACTUAL', phraseList: DYNAMIC_PODIUM_PHRASES.top1 },
-      { cand: top3, rank: 3, label: 'TOP 3 · PODIO OFICIAL', phraseList: DYNAMIC_PODIUM_PHRASES.top3 }
-    ].filter((item) => Boolean(item.cand));
-
-    if (podiumOrder.length === 0) {
+    if (votedOnly.length === 0 || totalVotes === 0) {
+      const hasCandidates = this.candidates.length > 0;
       podiumContainer.innerHTML = `
         <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: rgba(255,255,255,0.02); border: 1.5px dashed rgba(200,155,221,0.25); border-radius: 24px;">
           <p style="font-family: var(--font-principal); font-weight: 700; color: var(--rosa-muy-claro); font-size: 1.15rem; margin-bottom: 6px;">
-            AÚN NO HAY CANDIDATAS EN EL PODIO
+            ${hasCandidates ? 'EL PODIO SE ACTIVARÁ CON EL PRIMER VOTO' : 'AÚN NO HAY CANDIDATAS EN EL PODIO'}
           </p>
           <p style="font-size: 0.85rem; color: var(--lila);">
-            El ranking se activará en vivo automáticamente una vez registradas las participantes.
+            ${
+              hasCandidates
+                ? 'Las participantes registradas aún tienen 0 votos. El ranking TOP 3 aparecerá en vivo en cuanto se registre el primer voto verificado.'
+                : 'El ranking se activará en vivo automáticamente una vez registradas las participantes.'
+            }
           </p>
         </div>
       `;
-      runnersContainer.innerHTML = '<span style="color:var(--lila);font-size:0.85rem;padding:12px;">Esperando registro de participantes...</span>';
+      runnersContainer.innerHTML = `<span style="color:var(--lila);font-size:0.85rem;padding:12px;">${
+        hasCandidates ? 'Los puestos del ranking se mostrarán cuando comiencen a llegar votos...' : 'Esperando registro de participantes...'
+      }</span>`;
       return;
     }
 
+    const top1 = votedOnly[0];
+    const top2 = votedOnly[1];
+    const top3 = votedOnly[2];
+
+    const podiumOrder = [
+      { cand: top2, slotRank: 2, defaultLabel: 'TOP 2 · FAVORITA', phraseList: DYNAMIC_PODIUM_PHRASES.top2 },
+      { cand: top1, slotRank: 1, defaultLabel: 'TOP 1 · LÍDER ACTUAL', phraseList: DYNAMIC_PODIUM_PHRASES.top1 },
+      { cand: top3, slotRank: 3, defaultLabel: 'TOP 3 · PODIO OFICIAL', phraseList: DYNAMIC_PODIUM_PHRASES.top3 }
+    ];
+
     podiumContainer.innerHTML = podiumOrder
-      .map(({ cand, rank, label, phraseList }) => {
+      .map(({ cand, slotRank, defaultLabel, phraseList }) => {
+        if (!cand) {
+          return `
+            <article class="podium-monolith rank-${slotRank} podium-monolith-vacant" aria-label="Puesto ${slotRank} disponible">
+              <div style="font-family:var(--font-principal);font-size:3rem;font-weight:900;color:rgba(200,155,221,0.25);line-height:1;margin-bottom:12px;">0${slotRank}</div>
+              <div style="font-family:var(--font-principal);font-weight:800;font-size:0.9rem;color:var(--rosa-muy-claro);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">
+                PUESTO #${slotRank} DISPONIBLE
+              </div>
+              <p style="font-size:0.8rem;color:var(--lila);max-width:220px;line-height:1.5;">
+                Aún no hay otra candidata con votos para ocupar este lugar del podio.
+              </p>
+            </article>
+          `;
+        }
+
+        const realRank = rankById.get(cand.id) || slotRank;
+        const isTiedTop1 = realRank === 1 && tiedTopIds.size > 1;
+        const label = isTiedTop1
+          ? 'TOP 1 · EMPATE EN LA CIMA'
+          : realRank === 1
+            ? 'TOP 1 · LÍDER ACTUAL'
+            : realRank === 2
+              ? 'TOP 2 · FAVORITA'
+              : realRank === 3
+                ? 'TOP 3 · PODIO OFICIAL'
+                : defaultLabel;
+
         const sharePct = ((cand.votes / totalVotes) * 100).toFixed(1);
-        const visualBarWidth = Math.min(96, Math.max(32, Number(sharePct) * 3.9)).toFixed(0);
+        const visualBarWidth = Math.min(96, Math.max(12, Number(sharePct) * 3.9)).toFixed(0);
         const phrase = phraseList[this.phraseIndex % phraseList.length];
         const isFlashing = highlightCandidateId === cand.id ? 'flash-update' : '';
         const fallback = cand.fallbackAvatar || createEditorialPortrait(cand.name, cand.number);
 
         return `
-          <article class="podium-monolith rank-${rank} ${isFlashing}" data-cand-id="${cand.id}">
+          <article class="podium-monolith rank-${slotRank} ${isFlashing}" data-cand-id="${cand.id}">
             <img
               src="${cand.avatar}"
               alt="${cand.name}"
@@ -426,13 +488,13 @@ class Miss17VotingApp {
             <div class="monolith-top-bar">
               <div class="monolith-rank-badge">
                 ${
-                  rank === 1
+                  realRank === 1
                     ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>`
                     : `<span class="live-beacon"></span>`
                 }
                 <span>${label}</span>
               </div>
-              <span class="monolith-giant-num">0${rank}</span>
+              <span class="monolith-giant-num">0${realRank}</span>
             </div>
 
             <div class="monolith-content">
@@ -466,13 +528,20 @@ class Miss17VotingApp {
       })
       .join('');
 
-    const runnersUp = sorted.slice(3);
+    const runnersUp = votedOnly.slice(3);
+    if (runnersUp.length === 0) {
+      runnersContainer.innerHTML =
+        '<span style="color:var(--lila);font-size:0.84rem;padding:8px 12px;">Las demás candidatas aparecerán aquí a medida que reciban sus primeros votos.</span>';
+      return;
+    }
+
     runnersContainer.innerHTML = runnersUp
       .map((cand, idx) => {
         const pct = ((cand.votes / totalVotes) * 100).toFixed(1);
+        const rankNum = rankById.get(cand.id) || idx + 4;
         return `
           <div class="chaser-chip">
-            <span class="chaser-rank">#0${idx + 4}</span>
+            <span class="chaser-rank">#${String(rankNum).padStart(2, '0')}</span>
             <strong>${cand.name.split(' ')[0]} ${cand.name.split(' ')[1] || ''}</strong>
             <span class="chaser-pct">${pct}% preferencia</span>
           </div>
@@ -485,7 +554,7 @@ class Miss17VotingApp {
     const grid = document.getElementById('candidatesGrid');
     if (!grid) return;
 
-    const sorted = this.getSortedRanking();
+    const { rankById, tiedTopIds } = this.getRankingData();
 
     const orderedCandidates = this.displayOrderIds
       .map((id) => this.candidates.find((c) => c.id === id))
@@ -516,10 +585,16 @@ class Miss17VotingApp {
 
     grid.innerHTML = orderedCandidates
       .map((cand) => {
-        const rankIndex = sorted.findIndex((c) => c.id === cand.id) + 1;
+        const rankIndex = rankById.get(cand.id) || null;
         let topBadge = '';
-        if (rankIndex === 1) topBadge = `<span class="cover-rank-pill">TOP 1 · LA MÁS VOTADA</span>`;
-        else if (rankIndex <= 3) topBadge = `<span class="cover-rank-pill" style="background:var(--violeta-17);">EN EL TOP ${rankIndex}</span>`;
+        if (rankIndex === 1) {
+          topBadge =
+            tiedTopIds.size > 1
+              ? `<span class="cover-rank-pill">TOP 1 · EMPATE</span>`
+              : `<span class="cover-rank-pill">TOP 1 · LA MÁS VOTADA</span>`;
+        } else if (rankIndex && rankIndex <= 3) {
+          topBadge = `<span class="cover-rank-pill" style="background:var(--violeta-17);">EN EL TOP ${rankIndex}</span>`;
+        }
 
         const fallback = cand.fallbackAvatar || createEditorialPortrait(cand.name, cand.number);
 

@@ -6,6 +6,7 @@ import {
   INITIAL_CANDIDATES,
   INITIAL_AUDIT_LOGS,
   createEditorialPortrait,
+  computeCandidateRanking,
   STORAGE_KEYS
 } from './data.js';
 
@@ -290,8 +291,12 @@ class Miss17AdminSuite {
     this.renderAuditTable();
   }
 
+  getRankingData() {
+    return computeCandidateRanking(this.candidates);
+  }
+
   getSortedRanking() {
-    return [...this.candidates].sort((a, b) => b.votes - a.votes);
+    return this.getRankingData().sortedAll;
   }
 
   getTotalVotes() {
@@ -299,8 +304,9 @@ class Miss17AdminSuite {
   }
 
   renderKPIs() {
-    const sorted = this.getSortedRanking();
+    const { votedOnly, tiedTopIds } = this.getRankingData();
     const totalVotes = this.getTotalVotes();
+    const leader = votedOnly[0];
 
     const leaderNameEl = document.getElementById('adminKpiLeaderName');
     const leaderVotesEl = document.getElementById('adminKpiLeaderVotes');
@@ -309,12 +315,18 @@ class Miss17AdminSuite {
     const totalVotesEl = document.getElementById('adminKpiTotalVotes');
     const blockedEl = document.getElementById('adminKpiBlockedBots');
 
-    if (sorted[0]) {
-      if (leaderNameEl) leaderNameEl.textContent = sorted[0].name;
-      if (leaderVotesEl) leaderVotesEl.textContent = `${Number(sorted[0].votes).toLocaleString('es-CL')} votos acumulados`;
-      if (leaderThumbEl && sorted[0].avatar) {
-        leaderThumbEl.src = sorted[0].avatar;
+    if (leader) {
+      if (leaderNameEl) {
+        leaderNameEl.textContent = tiedTopIds.size > 1 ? `Empate (${tiedTopIds.size}): ${leader.name}` : leader.name;
       }
+      if (leaderVotesEl) leaderVotesEl.textContent = `${Number(leader.votes).toLocaleString('es-CL')} votos acumulados`;
+      if (leaderThumbEl && leader.avatar) {
+        leaderThumbEl.src = leader.avatar;
+      }
+    } else {
+      if (leaderNameEl) leaderNameEl.textContent = 'Sin votos aún';
+      if (leaderVotesEl) leaderVotesEl.textContent = '0 votos acumulados';
+      if (leaderThumbEl) leaderThumbEl.src = '/images/kpi_crown.jpg';
     }
     if (countEl) countEl.textContent = String(this.candidates.length);
     if (totalVotesEl) totalVotesEl.textContent = totalVotes.toLocaleString('es-CL');
@@ -326,7 +338,9 @@ class Miss17AdminSuite {
     const grid = document.getElementById('adminCandidatesVisualGrid');
     if (!grid) return;
 
-    let list = this.getSortedRanking();
+    const total = this.getTotalVotes();
+    const { sortedAll, rankById, tiedTopIds } = this.getRankingData();
+    let list = sortedAll;
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
       list = list.filter(
@@ -362,18 +376,22 @@ class Miss17AdminSuite {
       return;
     }
 
-    const total = Math.max(this.getTotalVotes(), 1);
-
     grid.innerHTML = list
-      .map((cand, idx) => {
-        const pct = ((cand.votes / total) * 100).toFixed(1);
+      .map((cand) => {
+        const candVotes = Number(cand.votes || 0);
+        const pct = total > 0 ? ((candVotes / total) * 100).toFixed(1) : '0.0';
+        const barWidth = candVotes > 0 ? Math.min(100, Math.max(8, Number(pct) * 3)) : 0;
         const fallback = cand.fallbackAvatar || createEditorialPortrait(cand.name, cand.number);
-        
-        let rankBadge = `<span class="admin-cand-rank-badge">#${idx + 1} EN RANKING</span>`;
-        if (idx === 0) {
-          rankBadge = `<span class="admin-cand-rank-badge" style="background:var(--fucsia-miss-17);box-shadow:0 0 14px var(--rosa-pop);display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 14h14v2H5v-2z"/></svg> TOP 1 · LÍDER</span>`;
-        } else if (idx < 3) {
-          rankBadge = `<span class="admin-cand-rank-badge" style="background:var(--violeta-17);">TOP ${idx + 1} · PODIO</span>`;
+        const realRank = rankById.get(cand.id) || null;
+
+        let rankBadge = `<span class="admin-cand-rank-badge" style="background:rgba(20,5,33,0.78);color:var(--lila);border:1px solid rgba(200,155,221,0.3);">SIN VOTOS AÚN</span>`;
+        if (realRank === 1) {
+          const top1Text = tiedTopIds.size > 1 ? 'TOP 1 · EMPATE' : 'TOP 1 · LÍDER';
+          rankBadge = `<span class="admin-cand-rank-badge" style="background:var(--fucsia-miss-17);box-shadow:0 0 14px var(--rosa-pop);display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 14h14v2H5v-2z"/></svg> ${top1Text}</span>`;
+        } else if (realRank && realRank <= 3) {
+          rankBadge = `<span class="admin-cand-rank-badge" style="background:var(--violeta-17);">TOP ${realRank} · PODIO</span>`;
+        } else if (realRank) {
+          rankBadge = `<span class="admin-cand-rank-badge">#${realRank} EN RANKING</span>`;
         }
 
         return `
@@ -408,7 +426,7 @@ class Miss17AdminSuite {
                     <strong style="color:var(--rosa-pop);font-size:0.96rem;">${Number(cand.votes).toLocaleString('es-CL')}</strong>
                   </div>
                   <div class="liquid-bar-track">
-                    <div class="liquid-bar-fill" style="width:${Math.min(100, Math.max(10, Number(pct) * 3))}%;"></div>
+                    <div class="liquid-bar-fill" style="width:${barWidth}%;"></div>
                   </div>
                   <div style="font-size:0.65rem;color:var(--lila);text-align:right;margin-top:4px;">
                     ${pct}% preferencia del público
@@ -437,7 +455,7 @@ class Miss17AdminSuite {
     const tbody = document.getElementById('adminCandidatesTableBody');
     if (!tbody) return;
 
-    const list = this.getSortedRanking();
+    const { sortedAll: list, rankById, tiedTopIds } = this.getRankingData();
     if (list.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -449,12 +467,17 @@ class Miss17AdminSuite {
       return;
     }
 
-    const total = Math.max(this.getTotalVotes(), 1);
+    const total = this.getTotalVotes();
 
     tbody.innerHTML = list
-      .map((c, index) => {
-        const pct = ((c.votes / total) * 100).toFixed(1);
+      .map((c) => {
+        const votes = Number(c.votes || 0);
+        const pct = total > 0 ? ((votes / total) * 100).toFixed(1) : '0.0';
         const fallback = c.fallbackAvatar || createEditorialPortrait(c.name, c.number);
+        const realRank = rankById.get(c.id) || null;
+        const positionText = realRank
+          ? `Posición actual: TOP ${realRank}${realRank === 1 && tiedTopIds.size > 1 ? ' (Empate)' : ''}`
+          : 'Sin votos registrados aún';
 
         return `
           <tr>
@@ -464,12 +487,12 @@ class Miss17AdminSuite {
             </td>
             <td>
               <strong>${c.name}</strong>
-              <div style="font-size:0.68rem;color:var(--lila);">Posición actual: TOP ${index + 1}</div>
+              <div style="font-size:0.68rem;color:var(--lila);">${positionText}</div>
             </td>
             <td>${c.age} años</td>
             <td>${c.sector}</td>
             <td>${c.school || 'Chimbarongo'}</td>
-            <td><strong style="color:var(--rosa-pop);font-size:0.95rem;">${Number(c.votes).toLocaleString('es-CL')}</strong></td>
+            <td><strong style="color:var(--rosa-pop);font-size:0.95rem;">${votes.toLocaleString('es-CL')}</strong></td>
             <td><strong>${pct}%</strong></td>
             <td>
               <div style="display:flex;gap:6px;">
@@ -492,7 +515,7 @@ class Miss17AdminSuite {
     const tbody = document.getElementById('adminResultsTableBody');
     if (!tbody) return;
 
-    const sorted = this.getSortedRanking();
+    const { sortedAll: sorted, votedOnly, rankById, tiedTopIds } = this.getRankingData();
     if (sorted.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -504,14 +527,32 @@ class Miss17AdminSuite {
       return;
     }
 
-    const total = Math.max(this.getTotalVotes(), 1);
-    const leaderVotes = sorted[0] ? sorted[0].votes : 0;
+    const total = this.getTotalVotes();
+    const leaderVotes = votedOnly[0] ? Number(votedOnly[0].votes || 0) : 0;
 
     tbody.innerHTML = sorted
-      .map((c, index) => {
-        const pct = ((c.votes / total) * 100).toFixed(1);
-        const diff = index === 0 ? 'LÍDER OFICIAL' : `-${Number(leaderVotes - c.votes).toLocaleString('es-CL')} votos`;
-        const rankLabel = index === 0 ? '👑 1° Lugar (Líder)' : index === 1 ? '🥈 2° Lugar (Podio)' : index === 2 ? '🥉 3° Lugar (Podio)' : `${index + 1}° Lugar`;
+      .map((c) => {
+        const votes = Number(c.votes || 0);
+        const pct = total > 0 ? ((votes / total) * 100).toFixed(1) : '0.0';
+        const barWidth = votes > 0 ? Math.min(100, Math.max(8, Number(pct) * 3)) : 0;
+        const realRank = rankById.get(c.id) || null;
+
+        let rankLabel = 'Sin votos';
+        let diff = leaderVotes > 0 ? `-${leaderVotes.toLocaleString('es-CL')} votos` : 'Sin votos aún';
+        if (realRank === 1) {
+          const isTied = tiedTopIds.size > 1;
+          rankLabel = isTied ? '👑 1° Lugar (Empate)' : '👑 1° Lugar (Líder)';
+          diff = isTied ? 'EMPATE EN LA CIMA' : 'LÍDER OFICIAL';
+        } else if (realRank === 2) {
+          rankLabel = '🥈 2° Lugar (Podio)';
+          diff = `-${Number(leaderVotes - votes).toLocaleString('es-CL')} votos`;
+        } else if (realRank === 3) {
+          rankLabel = '🥉 3° Lugar (Podio)';
+          diff = `-${Number(leaderVotes - votes).toLocaleString('es-CL')} votos`;
+        } else if (realRank) {
+          rankLabel = `${realRank}° Lugar`;
+          diff = `-${Number(leaderVotes - votes).toLocaleString('es-CL')} votos`;
+        }
 
         return `
           <tr>
@@ -520,16 +561,16 @@ class Miss17AdminSuite {
               <strong>${c.name}</strong> (#0${c.number})
             </td>
             <td>${c.sector}</td>
-            <td><strong style="color:var(--rosa-pop);font-size:0.95rem;">${Number(c.votes).toLocaleString('es-CL')}</strong></td>
+            <td><strong style="color:var(--rosa-pop);font-size:0.95rem;">${votes.toLocaleString('es-CL')}</strong></td>
             <td>
               <div style="display:flex;align-items:center;gap:10px;">
                 <div class="liquid-bar-track" style="width:100px;">
-                  <div class="liquid-bar-fill" style="width:${Math.min(100, Math.max(10, Number(pct) * 3))}%;"></div>
+                  <div class="liquid-bar-fill" style="width:${barWidth}%;"></div>
                 </div>
                 <span>${pct}%</span>
               </div>
             </td>
-            <td style="color:${index === 0 ? 'var(--rosa-pop)' : 'var(--lila)'};font-weight:700;">${diff}</td>
+            <td style="color:${realRank === 1 ? 'var(--rosa-pop)' : 'var(--lila)'};font-weight:700;">${diff}</td>
             <td><span style="color:#6EE7B7;font-weight:700;">${c.trendDelta || '+2.0%'}</span></td>
           </tr>
         `;
@@ -770,13 +811,15 @@ class Miss17AdminSuite {
   }
 
   exportCandidatesCsv() {
-    const sorted = this.getSortedRanking();
-    const total = Math.max(this.getTotalVotes(), 1);
+    const { sortedAll: sorted, rankById } = this.getRankingData();
+    const total = this.getTotalVotes();
     let csv = 'Posición,N° Oficial,Nombre,Edad,Sector,Colegio,Votos Reales,Porcentaje\n';
 
-    sorted.forEach((c, idx) => {
-      const pct = ((c.votes / total) * 100).toFixed(2);
-      csv += `${idx + 1},${c.number},"${c.name}",${c.age},"${c.sector}","${c.school || 'Chimbarongo'}",${c.votes},${pct}%\n`;
+    sorted.forEach((c) => {
+      const votes = Number(c.votes || 0);
+      const pct = total > 0 ? ((votes / total) * 100).toFixed(2) : '0.00';
+      const rank = rankById.get(c.id) || 'Sin votos';
+      csv += `${rank},${c.number},"${c.name}",${c.age},"${c.sector}","${c.school || 'Chimbarongo'}",${votes},${pct}%\n`;
     });
 
     this.downloadFile('reporte_votacion_miss17_chimbarongo.csv', 'text/csv', csv);

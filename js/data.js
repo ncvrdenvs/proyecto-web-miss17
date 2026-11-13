@@ -64,3 +64,38 @@ export const DYNAMIC_PODIUM_PHRASES = {
 };
 
 export const INITIAL_AUDIT_LOGS = [];
+
+/**
+ * Ordena candidatas por votos descendentes y asigna posiciones reales solo a quienes tienen votos (> 0).
+ */
+export function computeCandidateRanking(candidates = []) {
+  const sortedAll = [...candidates].sort((a, b) => {
+    const voteDiff = Number(b.votes || 0) - Number(a.votes || 0);
+    if (voteDiff !== 0) return voteDiff;
+    return Number(a.number || 0) - Number(b.number || 0);
+  });
+
+  const votedOnly = sortedAll.filter((c) => Number(c.votes || 0) > 0);
+  const rankById = new Map();
+  const tiedTopIds = new Set();
+
+  let currentRank = 1;
+  votedOnly.forEach((cand, idx) => {
+    const votes = Number(cand.votes || 0);
+    if (idx > 0 && votes < Number(votedOnly[idx - 1].votes || 0)) {
+      currentRank = idx + 1;
+    }
+    rankById.set(cand.id, currentRank);
+  });
+
+  if (votedOnly.length > 1) {
+    const topVotes = Number(votedOnly[0].votes || 0);
+    if (Number(votedOnly[1].votes || 0) === topVotes) {
+      votedOnly
+        .filter((c) => Number(c.votes || 0) === topVotes)
+        .forEach((c) => tiedTopIds.add(c.id));
+    }
+  }
+
+  return { sortedAll, votedOnly, rankById, tiedTopIds };
+}

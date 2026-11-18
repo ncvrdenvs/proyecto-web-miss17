@@ -3,47 +3,13 @@
 // En producción en Vercel, si existe process.env.RESEND_API_KEY, envía el correo real automáticamente.
 
 const crypto = require('crypto');
-const { checkRutAlreadyVoted, checkEmailAlreadyVoted } = require('./supabase-helper');
-
-const DISPOSABLE_DOMAINS = new Set([
-  'yopmail.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com',
-  'mailinator.com', 'throwawaymail.com', 'temp-mail.org', 'fakeinbox.com',
-  'sharklasers.com', 'getnada.com', 'maildrop.cc', 'trashmail.com', 'dispostable.com'
-]);
-
-function cleanRut(rut) {
-  return String(rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
-}
-
-function validateChileanRut(rut) {
-  const cleaned = cleanRut(rut);
-  if (cleaned.length < 8 || cleaned.length > 9) return false;
-
-  const body = cleaned.slice(0, -1);
-  const dv = cleaned.slice(-1);
-
-  if (!/^\d+$/.test(body)) return false;
-
-  // Bloquear patrones repetitivos falsos como 11111111, 22222222, 12345678
-  if (/^(\d)\1+$/.test(body) || body === '12345678' || body === '87654321') {
-    return false;
-  }
-
-  const numRut = parseInt(body, 10);
-  if (numRut < 1000000 || numRut > 50000000) return false;
-
-  let sum = 0;
-  let multiplier = 2;
-  for (let i = body.length - 1; i >= 0; i--) {
-    sum += parseInt(body.charAt(i), 10) * multiplier;
-    multiplier = multiplier === 7 ? 2 : multiplier + 1;
-  }
-
-  const expectedRest = 11 - (sum % 11);
-  const expectedDv = expectedRest === 11 ? '0' : expectedRest === 10 ? 'K' : String(expectedRest);
-
-  return dv === expectedDv;
-}
+const {
+  DISPOSABLE_DOMAINS,
+  cleanRut,
+  validateChileanRut,
+  checkRutAlreadyVoted,
+  checkEmailAlreadyVoted
+} = require('./supabase-helper');
 
 function signOtpToken(rut, email, candidateId, otpCode, expiresAt) {
   const secret = process.env.OTP_SECRET || 'miss17-chimbarongo-2026-ultra-secret-key';
@@ -136,7 +102,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { rut, email, phone, candidateId, candidateName, fingerprint, telemetry, honeypot } = req.body || {};
+    const {
+      rut,
+      email,
+      phone,
+      candidateId,
+      candidateName,
+      fingerprint,
+      telemetry,
+      honeypot,
+      mode
+    } = req.body || {};
 
     // 1. Trampa Honeypot anti-bots
     if (honeypot && String(honeypot).trim() !== '') {
@@ -181,6 +157,14 @@ module.exports = async function handler(req, res) {
         ok: false,
         code: 'ALREADY_VOTED',
         error: 'Este RUT ya emitió su voto oficial en Miss 17 Chimbarongo. Solo se permite un voto por persona.'
+      });
+    }
+
+    // Pre-chequeo previo a redirigir a Google OAuth (sin enviar correo OTP)
+    if (mode === 'precheck_google') {
+      return res.status(200).json({
+        ok: true,
+        eligible: true
       });
     }
 

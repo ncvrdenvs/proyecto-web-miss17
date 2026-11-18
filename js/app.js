@@ -13,7 +13,10 @@ import {
 
 import {
   fetchCandidatesFromDb,
-  subscribeToCandidatesRealtime
+  subscribeToCandidatesRealtime,
+  startGoogleOAuthVote,
+  getSupabaseAuthSession,
+  signOutSupabaseSession
 } from './supabase-client.js';
 
 import {
@@ -72,6 +75,7 @@ class Miss17VotingApp {
 
     this.selectedCandidate = null;
     this.activeOtpSession = null;
+    this.googleSession = null;
     this.otpTimerInterval = null;
     this.liveSimInterval = null;
     this.phraseIndex = 0;
@@ -96,9 +100,10 @@ class Miss17VotingApp {
     this.bindEvents();
     this.startPhraseRotation();
 
-    // Sincronización en la nube con Supabase
-    this.syncCandidatesFromCloud();
+    // Sincronización en la nube con Supabase y detección de retorno OAuth de Google
+    await this.syncCandidatesFromCloud();
     this.subscribeToLiveUpdates();
+    await this.handleGoogleAuthOnLoad();
   }
 
   async syncCandidatesFromCloud() {
@@ -705,6 +710,21 @@ class Miss17VotingApp {
       this.handleStep1Submit();
     });
 
+    document.getElementById('btnVoteWithGoogleOAuth')?.addEventListener('click', () => {
+      this.handleGoogleOAuthClick();
+    });
+
+    document.getElementById('btnVoteWithGoogleDirect')?.addEventListener('click', () => {
+      this.handleDirectGoogleVoteClick();
+    });
+
+    document.getElementById('btnSwitchGoogleAccount')?.addEventListener('click', async () => {
+      await signOutSupabaseSession();
+      this.googleSession = null;
+      this.updateGoogleAuthUI();
+      this.showToast('Cuenta Google desconectada. Ahora puedes elegir otra cuenta.');
+    });
+
     document.getElementById('btnBackToStep1')?.addEventListener('click', () => {
       this.setModalStep(1);
     });
@@ -826,6 +846,7 @@ class Miss17VotingApp {
 
     this.resetHumanShieldUI();
     this.hideModalAlert();
+    this.updateGoogleAuthUI();
 
     // 4. Mostrar siempre primero la Ficha con toda la información
     this.showProfileView();
@@ -950,63 +971,28 @@ class Miss17VotingApp {
     // Modo accesible: validación silenciosa en segundo plano
   }
 
-  triggerHumanShieldVerify() {
-    // Modo accesible: validación silenciosa en segundo plano
-  }
-
   async handleStep1Submit() {
-    this.hideModalAlert();
+    const pre = this.validateRutAndDeviceForVote();
+    if (!pre) return;
 
-    const rutVal = document.getElementById('voterRutInput')?.value || '';
     const emailVal = document.getElementById('voterEmailInput')?.value || '';
     const phoneVal = document.getElementById('voterPhoneInput')?.value || '';
-    const honeypotVal = document.getElementById('hpWebsiteField')?.value || '';
-
-    if (this.votedDevices.has(this.deviceFingerprint)) {
-      this.recordBlockedAudit(
-        maskRut(rutVal),
-        emailVal,
-        'Intento bloqueado: Este dispositivo ya emitió un voto.'
-      );
-      this.showModalAlert(
-        'Este dispositivo ya registró un voto. Solo se permite 1 voto por persona para que todas las candidatas tengan igualdad de condiciones. (Para pruebas, usa el botón "Habilitar para Votar de Nuevo" en el panel inferior).'
-      );
-      return;
-    }
-
-    const rutCheck = validateRut(rutVal);
-    if (!rutCheck.valid) {
-      this.showModalAlert(rutCheck.reason);
-      return;
-    }
-    if (this.votedRuts.has(rutCheck.clean)) {
-      this.recordBlockedAudit(
-        maskRut(rutVal),
-        emailVal,
-        'Intento bloqueado: El RUT ingresado ya emitió su voto.'
-      );
-      this.showModalAlert('Este RUT ya emitió su voto en Miss 17 Chimbarongo. Solo se permite un voto por persona.');
-      return;
-    }
 
     const emailCheck = validateEmailSecurity(emailVal);
     if (!emailCheck.valid) {
       if (emailCheck.isDisposable) {
-        this.recordBlockedAudit(maskRut(rutVal), emailVal, emailCheck.reason);
+        this.recordBlockedAudit(maskRut(pre.rutCheck.clean), emailVal, emailCheck.reason);
       }
       this.showModalAlert(emailCheck.reason);
       return;
     }
     if (this.votedEmails.has(emailCheck.email)) {
-      this.recordBlockedAudit(maskRut(rutVal), emailCheck.email, 'Intento bloqueado: Correo electrónico ya utilizado.');
+      this.recordBlockedAudit(
+        maskRut(pre.rutCheck.clean),
+        emailCheck.email,
+        'Intento bloqueado: Correo electrónico ya utilizado.'
+      );
       this.showModalAlert('Este correo electrónico ya fue utilizado para confirmar un voto.');
-      return;
-    }
-
-    const botEval = this.botTelemetry.evaluate(honeypotVal);
-    if (!botEval.passed) {
-      this.recordBlockedAudit(maskRut(rutVal), emailCheck.email, botEval.reason);
-      this.showModalAlert(botEval.reason);
       return;
     }
 
@@ -1021,14 +1007,14 @@ class Miss17VotingApp {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rut: rutCheck.clean,
+          rut: pre.rutCheck.clean,
           email: emailCheck.email,
           phone: phoneVal,
           candidateId: this.selectedCandidate.id,
           candidateName: this.selectedCandidate.name,
           fingerprint: this.deviceFingerprint,
-          telemetry: botEval.telemetry,
-          honeypot: honeypotVal
+          telemetry: pre.botEval.telemetry,
+          honeypot: pre.honeypotVal
         })
       });
 
@@ -1039,8 +1025,8 @@ class Miss17VotingApp {
       }
 
       this.activeOtpSession = {
-        rut: rutCheck.clean,
-        formattedRut: rutCheck.formatted,
+        rut: pre.rutCheck.clean,
+        formattedRut: pre.rutCheck.formatted,
         email: emailCheck.email,
         candidateId: this.selectedCandidate.id,
         expiresAt: data.expiresAt,
@@ -1050,8 +1036,8 @@ class Miss17VotingApp {
     } catch {
       const fallbackOtp = String(Math.floor(100000 + Math.random() * 900000));
       this.activeOtpSession = {
-        rut: rutCheck.clean,
-        formattedRut: rutCheck.formatted,
+        rut: pre.rutCheck.clean,
+        formattedRut: pre.rutCheck.formatted,
         email: emailCheck.email,
         candidateId: this.selectedCandidate.id,
         expiresAt: Date.now() + 180000,
@@ -1061,7 +1047,7 @@ class Miss17VotingApp {
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>Solicitar Código de Confirmación</span>';
+        submitBtn.innerHTML = '<span>Recibir Código de 6 Números por Correo</span>';
       }
     }
 
@@ -1095,6 +1081,295 @@ class Miss17VotingApp {
     this.otpTimerInterval = setInterval(updateTimer, 1000);
   }
 
+  updateGoogleAuthUI() {
+    const connectBox = document.getElementById('googleConnectState');
+    const connectedBox = document.getElementById('googleConnectedState');
+    const emailDisplay = document.getElementById('googleConnectedEmailText');
+    if (!connectBox || !connectedBox) return;
+
+    if (this.googleSession && this.googleSession.email) {
+      connectBox.style.display = 'none';
+      connectedBox.style.display = 'block';
+      if (emailDisplay) emailDisplay.textContent = this.googleSession.email;
+    } else {
+      connectBox.style.display = 'block';
+      connectedBox.style.display = 'none';
+      if (emailDisplay) emailDisplay.textContent = '';
+    }
+  }
+
+  validateRutAndDeviceForVote() {
+    this.hideModalAlert();
+    const rutVal = document.getElementById('voterRutInput')?.value || '';
+    const honeypotVal = document.getElementById('hpWebsiteField')?.value || '';
+
+    if (this.votedDevices.has(this.deviceFingerprint)) {
+      this.recordBlockedAudit(
+        maskRut(rutVal),
+        this.googleSession?.email || '',
+        'Intento bloqueado: Este dispositivo ya emitió un voto.'
+      );
+      this.showModalAlert(
+        'Este dispositivo ya registró un voto. Solo se permite 1 voto por persona para que todas las candidatas tengan igualdad de condiciones.'
+      );
+      return null;
+    }
+
+    const rutCheck = validateRut(rutVal);
+    if (!rutCheck.valid) {
+      this.showModalAlert(rutCheck.reason);
+      document.getElementById('voterRutInput')?.focus();
+      return null;
+    }
+
+    if (this.votedRuts.has(rutCheck.clean)) {
+      this.recordBlockedAudit(
+        maskRut(rutVal),
+        this.googleSession?.email || '',
+        'Intento bloqueado: El RUT ingresado ya emitió su voto.'
+      );
+      this.showModalAlert('Este RUT ya emitió su voto en Miss 17 Chimbarongo. Solo se permite un voto por persona.');
+      return null;
+    }
+
+    const botEval = this.botTelemetry.evaluate(honeypotVal);
+    if (!botEval.passed) {
+      this.recordBlockedAudit(maskRut(rutVal), this.googleSession?.email || '', botEval.reason);
+      this.showModalAlert(botEval.reason);
+      return null;
+    }
+
+    return { rutCheck, botEval, honeypotVal };
+  }
+
+  async handleGoogleOAuthClick() {
+    if (!this.selectedCandidate) return;
+    const pre = this.validateRutAndDeviceForVote();
+    if (!pre) return;
+
+    const btn = document.getElementById('btnVoteWithGoogleOAuth');
+    if (btn) {
+      btn.disabled = true;
+      btn.querySelector('span').textContent = 'Verificando y abriendo Google...';
+    }
+
+    try {
+      const checkRes = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'precheck_google',
+          rut: pre.rutCheck.clean,
+          candidateId: this.selectedCandidate.id,
+          fingerprint: this.deviceFingerprint,
+          telemetry: pre.botEval.telemetry,
+          honeypot: pre.honeypotVal
+        })
+      });
+      const checkData = await checkRes.json().catch(() => null);
+      if (checkData && (!checkRes.ok || !checkData.ok)) {
+        this.showModalAlert(checkData.error || 'No se pudo validar tu RUT en el servidor.');
+        if (btn) {
+          btn.disabled = false;
+          btn.querySelector('span').textContent = 'Confirmar y Votar con Google';
+        }
+        return;
+      }
+    } catch {
+      // Continuar si el entorno es estático sin /api
+    }
+
+    try {
+      sessionStorage.setItem(
+        'm17_pending_google_vote_v1',
+        JSON.stringify({
+          candidateId: this.selectedCandidate.id,
+          rut: pre.rutCheck.clean,
+          formattedRut: pre.rutCheck.formatted,
+          createdAt: Date.now()
+        })
+      );
+    } catch {}
+
+    const oauthRes = await startGoogleOAuthVote();
+    if (!oauthRes.ok) {
+      try {
+        sessionStorage.removeItem('m17_pending_google_vote_v1');
+      } catch {}
+      this.showModalAlert(
+        oauthRes.error || 'No se pudo conectar con Google. Usa la opción de código por correo más abajo.'
+      );
+      if (btn) {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Confirmar y Votar con Google';
+      }
+    }
+  }
+
+  async handleDirectGoogleVoteClick() {
+    if (!this.selectedCandidate) return;
+    if (!this.googleSession?.accessToken) {
+      await this.handleGoogleOAuthClick();
+      return;
+    }
+
+    const pre = this.validateRutAndDeviceForVote();
+    if (!pre) return;
+
+    if (this.votedEmails.has(this.googleSession.email)) {
+      this.recordBlockedAudit(
+        maskRut(pre.rutCheck.clean),
+        this.googleSession.email,
+        'Intento bloqueado: Cuenta Google ya utilizada.'
+      );
+      this.showModalAlert('Esta cuenta Google ya fue utilizada para emitir un voto. Usa "Cambiar" si otra persona votará.');
+      return;
+    }
+
+    await this.submitVoteWithGoogle(pre.rutCheck.clean);
+  }
+
+  async handleGoogleAuthOnLoad() {
+    const urlHasOAuthParams =
+      window.location.search.includes('code=') ||
+      window.location.hash.includes('access_token=') ||
+      window.location.search.includes('error=');
+
+    this.googleSession = await getSupabaseAuthSession();
+
+    if (urlHasOAuthParams && window.history?.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    let pending = null;
+    try {
+      const raw = sessionStorage.getItem('m17_pending_google_vote_v1');
+      if (raw) {
+        sessionStorage.removeItem('m17_pending_google_vote_v1');
+        pending = JSON.parse(raw);
+      }
+    } catch {}
+
+    if (!pending || !pending.candidateId || Date.now() - Number(pending.createdAt || 0) > 15 * 60 * 1000) {
+      return;
+    }
+
+    const exists = this.candidates.some((c) => c.id === pending.candidateId);
+    if (!exists) return;
+
+    this.openVoteModal(pending.candidateId);
+    this.showVotingFlowView();
+
+    const rutInput = document.getElementById('voterRutInput');
+    if (rutInput && pending.formattedRut) {
+      rutInput.value = pending.formattedRut;
+      this.validateRutFieldLive(pending.formattedRut);
+    }
+
+    this.updateGoogleAuthUI();
+
+    if (this.googleSession && this.googleSession.accessToken) {
+      await this.submitVoteWithGoogle(pending.rut);
+    } else {
+      this.showModalAlert(
+        'No se completó la verificación con Google. Puedes intentarlo nuevamente o recibir el código en tu correo.'
+      );
+    }
+  }
+
+  async submitVoteWithGoogle(cleanRutValue) {
+    if (!this.selectedCandidate || !this.googleSession?.accessToken) return;
+
+    const btnDirect = document.getElementById('btnVoteWithGoogleDirect');
+    const btnOauth = document.getElementById('btnVoteWithGoogleOAuth');
+    if (btnDirect) {
+      btnDirect.disabled = true;
+      const span = btnDirect.querySelector('span');
+      if (span) span.textContent = 'Confirmando voto con Google...';
+    }
+    if (btnOauth) btnOauth.disabled = true;
+
+    let receipt = null;
+    try {
+      const response = await fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          authMethod: 'google',
+          rut: cleanRutValue,
+          candidateId: this.selectedCandidate.id,
+          googleAccessToken: this.googleSession.accessToken,
+          fingerprint: this.deviceFingerprint
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        this.showModalAlert(data.error || 'No se pudo confirmar tu voto con Google.');
+        return;
+      }
+      receipt = data.receipt;
+    } catch {
+      this.showModalAlert('Error de conexión al registrar tu voto con Google. Intenta nuevamente.');
+      return;
+    } finally {
+      if (btnDirect) {
+        btnDirect.disabled = false;
+        const span = btnDirect.querySelector('span');
+        if (span) span.textContent = 'Confirmar mi Voto Ahora con Google';
+      }
+      if (btnOauth) btnOauth.disabled = false;
+    }
+
+    const verifiedEmail = receipt?.verifiedEmail || this.googleSession.email;
+    this.finalizeSuccessfulVote({
+      receipt,
+      rut: cleanRutValue,
+      email: verifiedEmail,
+      detail: 'RUT Módulo 11 + Cuenta Google Verificada + Huella única'
+    });
+
+    await signOutSupabaseSession();
+    this.googleSession = null;
+    this.updateGoogleAuthUI();
+  }
+
+  finalizeSuccessfulVote({ receipt, rut, email, detail }) {
+    this.votedRuts.add(rut);
+    if (email) this.votedEmails.add(email.toLowerCase().trim());
+    this.votedDevices.add(this.deviceFingerprint);
+
+    const cand = this.candidates.find((c) => c.id === this.selectedCandidate.id);
+    if (cand) {
+      cand.votes += 1;
+      cand.trendDelta = '+3.4%';
+    }
+
+    this.auditLogs.unshift({
+      id: receipt.receiptId,
+      timestamp: 'Ahora mismo',
+      maskedRut: receipt.maskedRut,
+      email: email ? email.replace(/(.{2}).+(@.+)/, '$1***$2') : 'privado',
+      fingerprint: this.deviceFingerprint,
+      candidateName: this.selectedCandidate.name,
+      status: 'VERIFIED',
+      detail
+    });
+
+    this.saveState();
+    this.renderAll(this.selectedCandidate.id);
+
+    document.getElementById('receiptCandidateName').textContent = this.selectedCandidate.name;
+    document.getElementById('receiptHashCode').textContent = receipt.receiptId;
+    document.getElementById('receiptMaskedRut').textContent = receipt.maskedRut;
+    const fpEl = document.getElementById('receiptFingerprint');
+    if (fpEl) fpEl.textContent = this.deviceFingerprint;
+
+    this.setModalStep(3);
+    this.launchConfetti();
+    this.showToast(`¡Voto confirmado con éxito para ${this.selectedCandidate.name}!`);
+  }
+
   async handleStep2Submit() {
     this.hideModalAlert();
     const enteredOtp = (document.getElementById('otpCodeInput')?.value || '').trim();
@@ -1122,6 +1397,7 @@ class Miss17VotingApp {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          authMethod: 'otp',
           rut: this.activeOtpSession.rut,
           email: this.activeOtpSession.email,
           candidateId: this.activeOtpSession.candidateId,
@@ -1151,42 +1427,16 @@ class Miss17VotingApp {
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Confirmar Voto Oficial';
+        submitBtn.textContent = 'Confirmar mi Voto Ahora';
       }
     }
 
-    this.votedRuts.add(this.activeOtpSession.rut);
-    this.votedEmails.add(this.activeOtpSession.email);
-    this.votedDevices.add(this.deviceFingerprint);
-
-    const cand = this.candidates.find((c) => c.id === this.selectedCandidate.id);
-    if (cand) {
-      cand.votes += 1;
-      cand.trendDelta = '+3.4%';
-    }
-
-    this.auditLogs.unshift({
-      id: receipt.receiptId,
-      timestamp: 'Ahora mismo',
-      maskedRut: receipt.maskedRut,
-      email: this.activeOtpSession.email.replace(/(.{2}).+(@.+)/, '$1***$2'),
-      fingerprint: this.deviceFingerprint,
-      candidateName: this.selectedCandidate.name,
-      status: 'VERIFIED',
+    this.finalizeSuccessfulVote({
+      receipt,
+      rut: this.activeOtpSession.rut,
+      email: this.activeOtpSession.email,
       detail: 'RUT Módulo 11 + OTP 6 dígitos + Huella única'
     });
-
-    this.saveState();
-    this.renderAll(this.selectedCandidate.id);
-
-    document.getElementById('receiptCandidateName').textContent = this.selectedCandidate.name;
-    document.getElementById('receiptHashCode').textContent = receipt.receiptId;
-    document.getElementById('receiptMaskedRut').textContent = receipt.maskedRut;
-    document.getElementById('receiptFingerprint').textContent = this.deviceFingerprint;
-
-    this.setModalStep(3);
-    this.launchConfetti();
-    this.showToast(`¡Voto confirmado con éxito para ${this.selectedCandidate.name}!`);
   }
 
   // ==========================================================================

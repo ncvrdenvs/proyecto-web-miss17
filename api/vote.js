@@ -2,11 +2,14 @@
 // Verifica la firma HMAC del código OTP, valida unicidad y emite un comprobante criptográfico del voto.
 
 const crypto = require('crypto');
-const { recordVoteInSupabase } = require('./supabase-helper');
-
-function cleanRut(rut) {
-  return String(rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
-}
+const {
+  DISPOSABLE_DOMAINS,
+  cleanRut,
+  validateChileanRut,
+  extractClientIp,
+  verifySupabaseAccessToken,
+  recordVoteInSupabase
+} = require('./supabase-helper');
 
 function maskRut(rut) {
   const cleaned = cleanRut(rut);
@@ -36,31 +39,81 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { rut, email, candidateId, otpCode, expiresAt, signature, fingerprint } = req.body || {};
+    const {
+      authMethod = 'otp',
+      rut,
+      email,
+      candidateId,
+      otpCode,
+      expiresAt,
+      signature,
+      googleAccessToken,
+      fingerprint
+    } = req.body || {};
 
-    if (!rut || !email || !candidateId || !otpCode || !expiresAt || !signature) {
+    if (!rut || !candidateId) {
       return res.status(400).json({
         ok: false,
         code: 'MISSING_FIELDS',
-        error: 'Faltan datos de verificación para confirmar el voto.'
+        error: 'Faltan datos obligatorios para confirmar el voto.'
       });
     }
 
-    if (Date.now() > Number(expiresAt)) {
+    if (!validateChileanRut(rut)) {
       return res.status(400).json({
         ok: false,
-        code: 'OTP_EXPIRED',
-        error: 'El código de confirmación ha expirado. Solicita uno nuevo.'
+        code: 'INVALID_RUT',
+        error: 'El RUT ingresado no es válido según la verificación oficial Módulo 11.'
       });
     }
 
-    const expectedSignature = signOtpToken(rut, email, candidateId, String(otpCode).trim(), expiresAt);
-    if (expectedSignature !== signature) {
-      return res.status(401).json({
-        ok: false,
-        code: 'INVALID_OTP',
-        error: 'El código de 6 dígitos ingresado es incorrecto. Verifica e intenta nuevamente.'
-      });
+    const clientIp = extractClientIp(req);
+    let verifiedEmail = '';
+
+    if (authMethod === 'google') {
+      const authCheck = await verifySupabaseAccessToken(googleAccessToken);
+      if (!authCheck.ok) {
+        return res.status(401).json({
+          ok: false,
+          code: 'GOOGLE_AUTH_INVALID',
+          error: authCheck.error
+        });
+      }
+      verifiedEmail = authCheck.email;
+      const domain = verifiedEmail.split('@')[1];
+      if (domain && DISPOSABLE_DOMAINS.has(domain)) {
+        return res.status(403).json({
+          ok: false,
+          code: 'DISPOSABLE_EMAIL',
+          error: 'No se permiten dominios de correo temporal.'
+        });
+      }
+    } else {
+      if (!email || !otpCode || !expiresAt || !signature) {
+        return res.status(400).json({
+          ok: false,
+          code: 'MISSING_FIELDS',
+          error: 'Faltan datos de verificación para confirmar el voto.'
+        });
+      }
+
+      if (Date.now() > Number(expiresAt)) {
+        return res.status(400).json({
+          ok: false,
+          code: 'OTP_EXPIRED',
+          error: 'El código de confirmación ha expirado. Solicita uno nuevo.'
+        });
+      }
+
+      verifiedEmail = String(email).toLowerCase().trim();
+      const expectedSignature = signOtpToken(rut, verifiedEmail, candidateId, String(otpCode).trim(), expiresAt);
+      if (expectedSignature !== signature) {
+        return res.status(401).json({
+          ok: false,
+          code: 'INVALID_OTP',
+          error: 'El código de 6 dígitos ingresado es incorrecto. Verifica e intenta nuevamente.'
+        });
+      }
     }
 
     // Generar hash de comprobante auditable
@@ -69,13 +122,11 @@ module.exports = async function handler(req, res) {
     const receiptHash = 'M17-' + crypto.createHash('sha256').update(receiptSeed).digest('hex').slice(0, 10).toUpperCase();
     const rutHash = crypto.createHash('sha256').update(cleanRut(rut)).digest('hex').slice(0, 16);
 
-    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || null;
-
     // Si Supabase está configurado, guardar el voto y actualizar el conteo atómicamente
     const dbSave = await recordVoteInSupabase({
       cleanRut: cleanRut(rut),
       maskedRut: maskRut(rut),
-      email: email.toLowerCase().trim(),
+      email: verifiedEmail,
       candidateId,
       fingerprint,
       receiptId: receiptHash,
@@ -97,6 +148,8 @@ module.exports = async function handler(req, res) {
         candidateId,
         maskedRut: maskRut(rut),
         rutHash,
+        authMethod,
+        verifiedEmail,
         fingerprintShort: String(fingerprint || '').slice(0, 10).toUpperCase(),
         verifiedAt: timestamp,
         dbSynced: dbSave.isConfigured

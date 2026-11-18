@@ -336,3 +336,68 @@ export async function subscribeToCandidatesRealtime(onCandidateUpdate) {
   }
 }
 
+/**
+ * Inicia verificación OAuth con Google usando Supabase Auth.
+ */
+export async function startGoogleOAuthVote() {
+  const supabase = await getSupabase();
+  if (!supabase) {
+    return { ok: false, error: 'Supabase no está configurado en esta plataforma.' };
+  }
+
+  try {
+    const redirectUrl = `${window.location.origin}${window.location.pathname}`;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          prompt: 'select_account'
+        }
+      }
+    });
+
+    if (error) {
+      return { ok: false, error: error.message || 'No se pudo iniciar la verificación con Google.' };
+    }
+
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err.message || 'Error al conectar con Google Auth.' };
+  }
+}
+
+/**
+ * Obtiene la sesión actual autenticada de Supabase (incluye accessToken y correo de Google).
+ */
+export async function getSupabaseAuthSession() {
+  const supabase = await getSupabase();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data?.session?.access_token || !data?.session?.user?.email) {
+      return null;
+    }
+    return {
+      session: data.session,
+      accessToken: data.session.access_token,
+      email: String(data.session.user.email).toLowerCase().trim(),
+      user: data.session.user
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cierra la sesión de verificación de Google en el navegador.
+ */
+export async function signOutSupabaseSession() {
+  const supabase = await getSupabase();
+  if (!supabase) return;
+  try {
+    await supabase.auth.signOut();
+  } catch {}
+}
+

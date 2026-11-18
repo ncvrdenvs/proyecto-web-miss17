@@ -273,9 +273,9 @@
             <div class="step-icon-bubble">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
             </div>
-            <h3>Ingresa tu RUT y Correo</h3>
+            <h3>Ingresa tu RUT y Elige cómo Confirmar</h3>
             <p>
-              Escribe tu RUT chileno y tu correo personal. Esto garantiza que <strong>cada persona vote una sola vez</strong> y que el certamen sea 100% justo para todas.
+              Escribe tu RUT chileno y verifica tu identidad en 1 clic con <strong>tu cuenta Google</strong> o recibiendo un código en tu correo. Así garantizamos <strong>1 voto por persona</strong>.
             </p>
           </article>
 
@@ -284,9 +284,9 @@
             <div class="step-icon-bubble">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             </div>
-            <h3>Confirma tu Código y ¡Listo!</h3>
+            <h3>Confirma tu Voto y ¡Listo!</h3>
             <p>
-              Ingresa el código simple de 6 números que verás en pantalla o recibirás en tu correo. ¡Tu voto se sumará al instante al ranking de popularidad en vivo!
+              Si eliges Google se confirma al instante; si usas otro correo ingresas el código de 6 números. ¡Tu voto se suma en vivo al ranking!
             </p>
           </article>
         </div>
@@ -429,16 +429,54 @@
             <span id="rutFeedbackHint" class="field-hint">Ingresa tu RUT chileno (se formatea automáticamente).</span>
           </div>
 
+          <div class="auth-choice-panel" id="googleAuthPanel">
+            <div class="auth-choice-head">
+              <span>Opción Rápida y Sin Esperar Código</span>
+              <span class="auth-choice-pill">Recomendado</span>
+            </div>
+
+            <div id="googleConnectState">
+              <button type="button" id="btnVoteWithGoogleOAuth" class="btn-google-verify">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"/>
+                  <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"/>
+                </svg>
+                <span>Confirmar y Votar con Google</span>
+              </button>
+              <span class="field-hint" style="margin-top:6px;">Verifica tu identidad en 1 toque sin esperar correo.</span>
+            </div>
+
+            <div id="googleConnectedState" style="display:none;">
+              <div class="google-connected-chip">
+                <div>
+                  <span style="display:block;font-size:0.68rem;color:#6EE7B7;font-weight:700;text-transform:uppercase;">✓ Cuenta Google Verificada</span>
+                  <strong id="googleConnectedEmailText" style="font-size:0.84rem;color:var(--blanco);word-break:break-all;"></strong>
+                </div>
+                <button type="button" id="btnSwitchGoogleAccount" class="btn-switch-google">Cambiar</button>
+              </div>
+              <button type="button" id="btnVoteWithGoogleDirect" class="btn-magnetic-fucsia" style="width:100%;margin-top:10px;">
+                <span>Confirmar mi Voto Ahora con Google</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="auth-method-divider">
+            <span>o confirma con código en otro correo</span>
+          </div>
+
           <div class="field-group">
             <div class="field-label-row">
-              <label class="field-label" for="voterEmailInput">Tu Correo Electrónico *</label>
+              <label class="field-label" for="voterEmailInput">Otro Correo Electrónico (Hotmail, Outlook, iCloud, etc.)</label>
             </div>
-            <input type="email" id="voterEmailInput" class="modern-input" placeholder="ejemplo@gmail.com" required />
+            <input type="email" id="voterEmailInput" class="modern-input" placeholder="ejemplo@correo.com" />
             <span id="emailFeedbackHint" class="field-hint">Te enviaremos un código de 6 números para confirmar tu voto.</span>
           </div>
 
-          <button type="submit" id="btnSubmitStep1" class="btn-magnetic-fucsia" style="width:100%;margin-top:10px;">
-            <span>Continuar: Recibir Código de Votación</span>
+          <button type="submit" id="btnSubmitStep1" class="btn-glass-secondary" style="width:100%;margin-top:6px;justify-content:center;padding:13px 18px;">
+            <span>Recibir Código de 6 Números por Correo</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </button>
         </form>

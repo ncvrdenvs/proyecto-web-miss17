@@ -104,6 +104,26 @@ export async function getSupabase() {
 }
 
 /**
+ * Normaliza una fila de la tabla candidates de Supabase a camelCase.
+ */
+export function normalizeCandidateRow(c) {
+  return {
+    id: c.id,
+    number: c.number,
+    name: c.name,
+    age: c.age,
+    sector: c.sector,
+    school: c.school,
+    quote: c.quote,
+    hobbies: c.hobbies,
+    votes: Number(c.votes || 0),
+    trendDelta: c.trend_delta || '+0.0%',
+    avatar: c.avatar,
+    fallbackAvatar: c.fallback_avatar || null
+  };
+}
+
+/**
  * Obtiene la lista completa de candidatas desde Supabase (o null si no está conectado).
  */
 export async function fetchCandidatesFromDb() {
@@ -121,23 +141,10 @@ export async function fetchCandidatesFromDb() {
       return null;
     }
 
-    if (!data || data.length === 0) return null;
+    if (!data) return [];
 
     // Normalizar a formato camelCase compatible con la aplicación
-    return data.map((c) => ({
-      id: c.id,
-      number: c.number,
-      name: c.name,
-      age: c.age,
-      sector: c.sector,
-      school: c.school,
-      quote: c.quote,
-      hobbies: c.hobbies,
-      votes: c.votes,
-      trendDelta: c.trend_delta || '+0.0%',
-      avatar: c.avatar,
-      fallbackAvatar: c.fallback_avatar || null
-    }));
+    return data.map(normalizeCandidateRow);
   } catch (err) {
     console.warn('[Supabase] Error de red al consultar candidatas:', err);
     return null;

@@ -468,7 +468,7 @@ body {
 /* Mini Bento Telemetría en el Hero */
 .hero-bento-strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 14px;
 }
 
@@ -2194,12 +2194,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .modal-cand-chip {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .modal-cand-avatar {
@@ -2207,8 +2210,14 @@ body {
   height: 54px;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center 15%;
+  flex-shrink: 0;
   border: 2px solid var(--rosa-pop);
   box-shadow: 0 0 18px rgba(242, 41, 155, 0.5);
+}
+
+.modal-cand-info {
+  min-width: 0;
 }
 
 .modal-cand-info span {
@@ -2227,11 +2236,13 @@ body {
   font-size: 1.12rem;
   text-transform: uppercase;
   color: var(--blanco);
+  word-break: break-word;
 }
 
 .btn-modal-close {
   width: 36px;
   height: 36px;
+  flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid rgba(200, 155, 221, 0.3);
   background: rgba(255, 255, 255, 0.06);
@@ -2255,19 +2266,21 @@ body {
   grid-template-columns: 220px 1fr;
   gap: 22px;
   align-items: start;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-@media (max-width: 640px) {
-  .cand-profile-card {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    padding: 18px;
-  }
+.cand-profile-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .cand-profile-photo-wrap {
   position: relative;
+  width: 100%;
   border-radius: 20px;
   overflow: hidden;
   border: 2px solid rgba(242, 41, 155, 0.45);
@@ -2276,18 +2289,53 @@ body {
   background: #140521;
 }
 
-@media (max-width: 640px) {
-  .cand-profile-photo-wrap {
-    max-width: 240px;
-    margin: 0 auto;
-  }
-}
-
 .cand-profile-photo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 15%;
   display: block;
+}
+
+@media (max-width: 768px) {
+  .cand-profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px 16px 22px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cand-profile-photo-wrap {
+    flex: 0 0 auto;
+    width: min(215px, 68vw);
+    height: 270px;
+    aspect-ratio: auto;
+    margin: 0 auto;
+  }
+
+  .cand-profile-content {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .cand-profile-tag,
+  .cand-profile-name {
+    text-align: center;
+  }
+
+  .cand-profile-name {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+
+  .cand-profile-meta-grid {
+    justify-content: center;
+  }
 }
 
 .cand-profile-num-badge {
@@ -2662,6 +2710,141 @@ body {
   gap: 24px;
 }
 
+.hero-credits-bar {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 0.78rem;
+  color: var(--lila);
+}
+
+.hero-credit-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ig-credit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--rosa-pop);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.ig-credit-link:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+.inline-credits-note {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--lila);
+  line-height: 1.5;
+}
+
+.receipt-credits-row {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(200, 155, 221, 0.16);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--lila);
+}
+
+.footer-brand-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.footer-brand-title {
+  font-family: var(--font-principal);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--blanco);
+  display: block;
+  font-size: 0.96rem;
+}
+
+.footer-brand-sub {
+  font-size: 0.78rem;
+  color: var(--lila);
+  display: block;
+  margin-top: 2px;
+}
+
+.footer-credits-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-credit-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  background: rgba(50, 17, 79, 0.55);
+  border: 1px solid rgba(200, 155, 221, 0.25);
+  color: var(--blanco);
+  text-decoration: none;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.footer-credit-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--rosa-pop);
+  box-shadow: 0 10px 24px rgba(213, 0, 120, 0.25);
+}
+
+.footer-credit-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(242, 41, 155, 0.25), rgba(145, 70, 255, 0.25));
+  border: 1px solid rgba(242, 41, 155, 0.45);
+  color: var(--rosa-pop);
+  flex-shrink: 0;
+}
+
+.footer-credit-copy {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.footer-credit-role {
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--lila);
+  font-weight: 700;
+}
+
+.footer-credit-handle {
+  font-family: var(--font-principal);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--blanco);
+  margin-top: 2px;
+}
+
 /* ==========================================================================
    FULL RESPONSIVE (MOBILE, TABLET, DESKTOP 2026)
    ========================================================================== */
@@ -2678,6 +2861,10 @@ body {
   }
 
   .hero-cta-row {
+    justify-content: center;
+  }
+
+  .hero-credits-bar {
     justify-content: center;
   }
 
@@ -2843,10 +3030,10 @@ body {
     border-radius: 14px !important;
   }
 
-  /* Micro-Grid de 3 Columnas para Stats en 1 sola fila limpia */
+  /* Micro-Grid de 2 Columnas para Stats en 1 sola fila limpia */
   .hero-bento-strip {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
     width: 100% !important;
     margin-top: 4px !important;
@@ -3388,6 +3575,12 @@ body {
     -webkit-overflow-scrolling: touch !important;
   }
 
+  #modalVotingFlowView {
+    flex: 1;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .modern-input {
     font-size: 16px !important; /* CRITICAL: Evita zoom en Safari iOS */
     padding: 11px 14px !important;
@@ -3459,6 +3652,10 @@ body {
   }
 
   /* 11. FOOTER & TOASTS */
+  .hero-credits-bar {
+    justify-content: center !important;
+  }
+
   .footer-2026 {
     padding: 32px 14px !important;
   }
@@ -3473,6 +3670,23 @@ body {
   .footer-inner > div {
     text-align: center !important;
     justify-content: center !important;
+  }
+
+  .footer-brand-block {
+    flex-direction: column !important;
+    gap: 10px !important;
+    text-align: center !important;
+  }
+
+  .footer-credits-grid {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footer-credit-card {
+    flex: 1 1 220px;
+    max-width: 290px;
+    justify-content: flex-start;
   }
 
   .toast-container {

@@ -13,6 +13,7 @@ import {
 
 import {
   fetchCandidatesFromDb,
+  normalizeCandidateRow,
   subscribeToCandidatesRealtime,
   startGoogleOAuthVote,
   getSupabaseAuthSession,
@@ -109,8 +110,9 @@ class Miss17VotingApp {
   async syncCandidatesFromCloud() {
     try {
       const cloud = await fetchCandidatesFromDb();
-      if (cloud && cloud.length > 0) {
+      if (Array.isArray(cloud)) {
         this.candidates = cloud;
+        this.syncDisplayOrder();
         this.saveState();
         this.renderAll();
       }
@@ -119,19 +121,40 @@ class Miss17VotingApp {
     }
   }
 
+  syncDisplayOrder() {
+    const validIds = new Set(this.candidates.map((c) => c.id));
+    const kept = this.displayOrderIds.filter((id) => validIds.has(id));
+    const seen = new Set(kept);
+    const added = this.candidates.map((c) => c.id).filter((id) => !seen.has(id));
+    this.displayOrderIds = [...kept, ...added];
+  }
+
   subscribeToLiveUpdates() {
     subscribeToCandidatesRealtime((payload) => {
-      if (payload && payload.new) {
-        const updated = payload.new;
-        const idx = this.candidates.findIndex((c) => c.id === updated.id);
-        if (idx !== -1) {
-          this.candidates[idx].votes = updated.votes;
-          this.candidates[idx].trendDelta = updated.trend_delta || '+3.5%';
-          this.candidates[idx].name = updated.name;
-          this.candidates[idx].avatar = updated.avatar;
+      if (!payload) return;
+
+      if (payload.eventType === 'DELETE' && payload.old?.id) {
+        const prevLen = this.candidates.length;
+        this.candidates = this.candidates.filter((c) => c.id !== payload.old.id);
+        if (this.candidates.length !== prevLen) {
+          this.syncDisplayOrder();
           this.saveState();
           this.renderAll();
         }
+        return;
+      }
+
+      if (payload.new) {
+        const normalized = normalizeCandidateRow(payload.new);
+        const idx = this.candidates.findIndex((c) => c.id === normalized.id);
+        if (idx !== -1) {
+          this.candidates[idx] = normalized;
+        } else {
+          this.candidates.push(normalized);
+          this.syncDisplayOrder();
+        }
+        this.saveState();
+        this.renderAll(normalized.id);
       }
     });
   }
@@ -330,14 +353,19 @@ class Miss17VotingApp {
     const totalEl = document.getElementById('statTotalVerified');
     const blockedEl = document.getElementById('statBlockedBots');
     const countEl = document.getElementById('adminCandCount');
+    const heroCandEl = document.getElementById('heroCandCountValue');
     const heroTop1El = document.getElementById('heroTop1PreviewName');
 
     const { votedOnly, tiedTopIds } = this.getRankingData();
     const top1 = votedOnly[0];
+    const candCount = this.candidates.length;
 
     if (totalEl) totalEl.textContent = this.getTotalVotes().toLocaleString('es-CL');
     if (blockedEl) blockedEl.textContent = this.blockedCount.toLocaleString('es-CL');
-    if (countEl) countEl.textContent = String(this.candidates.length);
+    if (countEl) countEl.textContent = String(candCount);
+    if (heroCandEl) {
+      heroCandEl.innerHTML = `${candCount.toLocaleString('es-CL')} <span>${candCount === 1 ? 'Candidata' : 'Candidatas'}</span>`;
+    }
     if (heroTop1El) {
       if (top1) {
         heroTop1El.textContent = tiedTopIds.size > 1 ? `Empate: ${top1.name.split(' ')[0]} y más` : top1.name;
@@ -670,7 +698,6 @@ class Miss17VotingApp {
     document.getElementById('btnShuffleCandidates')?.addEventListener('click', () => {
       this.displayOrderIds = this.shuffleIds(this.candidates.map((c) => c.id));
       this.renderCandidatesGrid();
-      this.showToast('Orden aleatorio aplicado para garantizar igualdad de condiciones.');
     });
 
     document.getElementById('searchCandidateInput')?.addEventListener('input', (e) => {
@@ -858,7 +885,10 @@ class Miss17VotingApp {
     const profileView = document.getElementById('modalCandidateProfileView');
     const flowView = document.getElementById('modalVotingFlowView');
     const subTitleEl = document.getElementById('modalTopSubtitle');
-    if (profileView) profileView.style.display = 'grid';
+    if (profileView) {
+      profileView.style.display = '';
+      profileView.scrollTop = 0;
+    }
     if (flowView) flowView.style.display = 'none';
     if (subTitleEl) subTitleEl.textContent = 'FICHA DE PARTICIPANTE';
   }
@@ -868,7 +898,10 @@ class Miss17VotingApp {
     const flowView = document.getElementById('modalVotingFlowView');
     const subTitleEl = document.getElementById('modalTopSubtitle');
     if (profileView) profileView.style.display = 'none';
-    if (flowView) flowView.style.display = 'block';
+    if (flowView) {
+      flowView.style.display = 'block';
+      flowView.scrollTop = 0;
+    }
     if (subTitleEl) subTitleEl.textContent = 'EMITIENDO VOTO OFICIAL';
     this.setModalStep(1);
   }
@@ -1531,20 +1564,8 @@ class Miss17VotingApp {
     }, 5500);
   }
 
-  showToast(message) {
-    const container = document.getElementById('toastContainer');
-    if (!container) return;
-    const item = document.createElement('div');
-    item.className = 'toast-item';
-    item.textContent = message;
-    container.appendChild(item);
-
-    setTimeout(() => {
-      item.style.opacity = '0';
-      item.style.transform = 'translateX(30px)';
-      item.style.transition = 'all 0.3s ease';
-      setTimeout(() => item.remove(), 300);
-    }, 4000);
+  showToast() {
+    // Mensajes flotantes desactivados en la vista pública para mantener la interfaz limpia.
   }
 
   launchConfetti() {

@@ -447,7 +447,7 @@ body {
   font-size: 1.08rem;
   color: var(--rosa-muy-claro);
   max-width: 590px;
-  margin-bottom: 14px;
+  margin-bottom: 34px;
   font-weight: 400;
   line-height: 1.65;
   opacity: 0.92;
@@ -2710,83 +2710,6 @@ body {
   gap: 24px;
 }
 
-.hero-credits-bar {
-  margin: 0 0 26px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-  font-size: 0.7rem;
-  color: rgba(200, 155, 221, 0.72);
-  letter-spacing: 0.02em;
-}
-
-.hero-credit-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.hero-credit-sep {
-  opacity: 0.5;
-}
-
-.hero-ig-subtle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: rgba(251, 234, 245, 0.86);
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.2s ease, opacity 0.2s ease;
-}
-
-.hero-ig-subtle svg {
-  opacity: 0.75;
-}
-
-.hero-ig-subtle:hover {
-  color: var(--rosa-pop);
-}
-
-.hero-ig-subtle:hover svg {
-  opacity: 1;
-}
-
-.ig-credit-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--rosa-pop);
-  font-weight: 700;
-  text-decoration: none;
-  transition: color 0.2s ease, opacity 0.2s ease;
-}
-
-.ig-credit-link:hover {
-  color: #FFFFFF;
-  text-decoration: underline;
-}
-
-.inline-credits-note {
-  margin-top: 8px;
-  font-size: 0.75rem;
-  color: var(--lila);
-  line-height: 1.5;
-}
-
-.receipt-credits-row {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(200, 155, 221, 0.16);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  color: var(--lila);
-}
-
 .footer-brand-block {
   display: flex;
   align-items: center;
@@ -2888,10 +2811,6 @@ body {
   }
 
   .hero-cta-row {
-    justify-content: center;
-  }
-
-  .hero-credits-bar {
     justify-content: center;
   }
 
@@ -3036,7 +2955,7 @@ body {
   .hero-lead {
     font-size: 0.88rem !important;
     line-height: 1.5 !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 22px !important;
     max-width: 100% !important;
     padding: 0 4px !important;
   }
@@ -3679,13 +3598,6 @@ body {
   }
 
   /* 11. FOOTER & TOASTS */
-  .hero-credits-bar {
-    justify-content: center !important;
-    font-size: 0.67rem !important;
-    margin: 0 0 16px !important;
-    gap: 4px 7px !important;
-  }
-
   .footer-2026 {
     padding: 32px 14px !important;
   }
